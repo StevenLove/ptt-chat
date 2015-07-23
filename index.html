@@ -1,0 +1,156 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Socket.IO chat</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font: 13px Helvetica, Arial; }
+      form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
+      form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
+      form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
+      #messages { list-style-type: none; margin: 0; padding: 0; }
+      #messages li { padding: 5px 10px; }
+      #messages li:nth-child(odd) { background: #eee; }
+    </style>
+  </head>
+  <body>
+    <div id="branding"  style="float: left;"></div><br />
+    <ul id="messages"></ul>
+      
+    <form action="">
+      <input id="m" autocomplete="off" /><button>Send</button>
+    </form>
+
+    <script src="https://www.google.com/jsapi" type="text/javascript"></script>
+    <script src ="https://cdn.socket.io/socket.io-1.2.0.js"></script>
+    <script src ="http://code.jquery.com/jquery-1.11.1.js"></script>
+    <script src = "/socket.io/socket.io.js"></script>
+    <!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+
+<!-- Latest compiled JavaScript -->
+<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+
+    <script>
+      var socket = io();
+      $('form').submit(function(){
+        socket.emit('chat message', $('#m').val());
+        $('#m').val('');
+        return false;
+      });
+      socket.on('chat message', function(msg){
+        // $('#messages').append($('<li>').text(msg));
+        GoogleSearch(msg);
+      });
+   
+      
+      google.load('search', '1');
+      google.setOnLoadCallback(function(){
+        google.search.Search.getBranding('branding');
+      })
+
+
+      var imageSearch;
+
+
+
+      function searchComplete() {
+
+        // Check that we got results
+        if (imageSearch.results && imageSearch.results.length > 0) {
+
+          // Grab our content div, clear it.
+          // var contentDiv = document.getElementById('content');
+          // contentDiv.innerHTML = '';
+
+          // Loop through our results, printing them to the page.
+          var results = imageSearch.results;
+          var container;
+          if(results.length>0){
+            container = $("<span>");
+            $("#messages").append(container);
+          }
+           for (var i = 0; i < results.length; i++) {
+            // For each result write it's title and image to the screen
+            var result = results[i];
+            // var imgContainer = document.createElement('div');
+            // var title = document.createElement('div');
+            
+            // We use titleNoFormatting so that no HTML tags are left in the 
+            // title
+            // title.innerHTML = result.titleNoFormatting;
+            // var newImg = document.createElement('img');
+
+            // There is also a result.url property which has the escaped version
+            container.append($("<img>").attr('src',result.tbUrl).hide());
+            
+
+            // newImg.src=result.tbUrl;
+            // imgContainer.appendChild(title);
+            // imgContainer.appendChild(newImg);
+
+            // Put our title + image in the content
+            // contentDiv.appendChild(imgContainer);
+           }
+           // CycleThroughImages(container);
+           ShowOneImage(container,0);
+          // Now add links to additional pages of search results.
+          // addPaginationLinks(imageSearch);
+        }
+      }
+
+      function CycleThroughImages(container){
+        ShowNextImage(container,0);
+      }
+      function ShowNextImage(container,index){
+        index = parseInt(index);
+        var max = container.children().length;
+        // console.log("max: " + max);
+        while(index >= max){
+          index = index-max;
+        }
+        ShowOneImage(container,index);
+        setTimeout(function(){
+          ShowNextImage(container,index+1);
+        },2000);
+      }
+      function ShowOneImage(container,index){
+        container.children().hide();
+        var index_from_1 = parseInt(index) + 1;
+        container.children('img:nth-child('+index_from_1+')').show();
+      }
+
+
+      function GoogleSearch(string){
+         // Create an Image Search instance.
+        imageSearch = new google.search.ImageSearch();
+
+        // Set searchComplete as the callback function when a search is 
+        // complete.  The imageSearch object will have results in it.
+        imageSearch.setSearchCompleteCallback(this, searchComplete, null);
+
+        imageSearch.setResultSetSize(8);
+
+        imageSearch.execute(string);
+        
+      }
+
+
+
+
+    </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </body>
+</html>
