@@ -15,11 +15,28 @@
   </head>
   <body>
     <div id="branding"  style="float: left;"></div><br />
-    <ul id="messages"></ul>
       
     <form action="">
       <input id="m" autocomplete="off" /><button>Send</button>
     </form>
+
+
+    <!--
+      Below we include the Login Button social plugin. This button uses
+      the JavaScript SDK to present a graphical Login button that triggers
+      the FB.login() function when clicked.
+    -->
+
+    <fb:login-button scope="public_profile,email" onlogin="checkLoginState();">
+    </fb:login-button>
+
+    <div id="status">
+    </div>
+
+    <ul id="messages"></ul>
+
+
+
 
     <script src="https://www.google.com/jsapi" type="text/javascript"></script>
     <script src ="https://cdn.socket.io/socket.io-1.2.0.js"></script>
@@ -32,110 +49,23 @@
 <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
 
 
+
+<script src = "facebook.js"></script>
 <script>
-  var user_name = "anonymous";
+
+  function SetupFacebook(){
+    // For now, control use of the dev version or public version
+    // by commenting out one of the two lines below
+    //*********************************************
+    // SetFacebookInitCallback();
+    SetFacebookInitCallbackDev();
+    // *********************************************
+    LoadFacebookSDK();
+  }
+
+  SetupFacebook();
 </script>
 
-
-
-
-
-
-
-
-<script>
-  // This is called with the results from from FB.getLoginStatus().
-  function statusChangeCallback(response) {
-    console.log('statusChangeCallback');
-    console.log(response);
-    // The response object is returned with a status field that lets the
-    // app know the current login status of the person.
-    // Full docs on the response object can be found in the documentation
-    // for FB.getLoginStatus().
-    if (response.status === 'connected') {
-      // Logged into your app and Facebook.
-      testAPI();
-    } else if (response.status === 'not_authorized') {
-      // The person is logged into Facebook, but not your app.
-      document.getElementById('status').innerHTML = 'Please log ' +
-        'into this app.';
-    } else {
-      // The person is not logged into Facebook, so we're not sure if
-      // they are logged into this app or not.
-      document.getElementById('status').innerHTML = 'Please log ' +
-        'into Facebook.';
-    }
-  }
-
-  // This function is called when someone finishes with the Login
-  // Button.  See the onlogin handler attached to it in the sample
-  // code below.
-  function checkLoginState() {
-    FB.getLoginStatus(function(response) {
-      statusChangeCallback(response);
-    });
-  }
-
-  window.fbAsyncInit = function() {
-  FB.init({
-    appId      : '1457862287849906',
-    cookie     : true,  // enable cookies to allow the server to access 
-                        // the session
-    xfbml      : true,  // parse social plugins on this page
-    version    : 'v2.2' // use version 2.2
-  });
-
-  // Now that we've initialized the JavaScript SDK, we call 
-  // FB.getLoginStatus().  This function gets the state of the
-  // person visiting this page and can return one of three states to
-  // the callback you provide.  They can be:
-  //
-  // 1. Logged into your app ('connected')
-  // 2. Logged into Facebook, but not your app ('not_authorized')
-  // 3. Not logged into Facebook and can't tell if they are logged into
-  //    your app or not.
-  //
-  // These three cases are handled in the callback function.
-
-  FB.getLoginStatus(function(response) {
-    statusChangeCallback(response);
-  });
-
-  };
-
-  // Load the SDK asynchronously
-  (function(d, s, id) {
-    var js, fjs = d.getElementsByTagName(s)[0];
-    if (d.getElementById(id)) return;
-    js = d.createElement(s); js.id = id;
-    js.src = "//connect.facebook.net/en_US/sdk.js";
-    fjs.parentNode.insertBefore(js, fjs);
-  }(document, 'script', 'facebook-jssdk'));
-
-  // Here we run a very simple test of the Graph API after login is
-  // successful.  See statusChangeCallback() for when this call is made.
-  function testAPI() {
-    console.log('Welcome!  Fetching your information.... ');
-    FB.api('/me', function(response) {
-      console.log('Successful login for: ' + response.name);
-      document.getElementById('status').innerHTML =
-        'Thanks for logging in, ' + response.name + '!';
-      user_name = response.name;
-    });
-  }
-</script>
-
-<!--
-  Below we include the Login Button social plugin. This button uses
-  the JavaScript SDK to present a graphical Login button that triggers
-  the FB.login() function when clicked.
--->
-
-<fb:login-button scope="public_profile,email" onlogin="checkLoginState();">
-</fb:login-button>
-
-<div id="status">
-</div>
 
 
 
@@ -152,71 +82,94 @@
 
     <script>
       var socket = io();
+
+
+      function ChatMessage(message){
+        this.msg = message;
+        this.author = GetName();
+        this.timestamp = new Date().getTime();
+      }
+
+
       $('form').submit(function(){
-        socket.emit('chat message', $('#m').val());
+        var msg = $('#m').val();
+        var chat_message = new ChatMessage(msg);
+        console.log(msg);
+        console.log(chat_message);
+        socket.emit('chat message', chat_message);
         $('#m').val('');
         return false;
       });
-      socket.on('chat message', function(msg){
-        // $('#messages').append($('<li>').text(msg));
-        GoogleSearch(msg);
+
+      socket.on('chat message', function(chat_message){
+        ChatMessageContainer(chat_message);
       });
-   
-      
-      google.load('search', '1');
-      google.setOnLoadCallback(function(){
-        google.search.Search.getBranding('branding');
-      })
 
+      function ScrollDown(){
+        window.scrollTo(0,document.body.scrollHeight);
+      }
 
-      var imageSearch;
+      function GetName(){
+        if(document.facebook.name){
+          return document.facebook.name;
+        }
+        else{
+          return "Anonymous";
+        }
+      }
 
+      function Label(chat_message){
+        var time = "(" + chat_message.timestamp + ")";
+        var author = chat_message.author;
+        var label = time + " " + author + ": ";
+        return label;
+      }
+      function ChatMessageContainer(chat_message){
+        var img_container = $("<span>");
+        var label = Label(chat_message);
+        var container = $('<li>');
+        container.text(label);
+        container.append(img_container);
+        GoogleSearch(img_container,chat_message.msg);
+        $("#messages").append(container);
+      }
 
+      function SetupGoogleSearch(){
+        google.load('search', '1');
+        google.setOnLoadCallback(function(){
+          google.search.Search.getBranding('branding');
+        })
+        window.imageSearch = {};
+      }
+      SetupGoogleSearch();
 
       function searchComplete() {
-
         // Check that we got results
         if (imageSearch.results && imageSearch.results.length > 0) {
-
-          // Grab our content div, clear it.
-          // var contentDiv = document.getElementById('content');
-          // contentDiv.innerHTML = '';
-
           // Loop through our results, printing them to the page.
           var results = imageSearch.results;
-          var container;
-          if(results.length>0){
-            container = $("<span>");
-            $('#messages').append($('<li>').text(user_name + ": ").append(container));
-            // $("#messages").append(container);
-          }
+          var container = imageSearch.destination_container;
            for (var i = 0; i < results.length; i++) {
-            // For each result write it's title and image to the screen
             var result = results[i];
-            // var imgContainer = document.createElement('div');
-            // var title = document.createElement('div');
-            
-            // We use titleNoFormatting so that no HTML tags are left in the 
-            // title
-            // title.innerHTML = result.titleNoFormatting;
-            // var newImg = document.createElement('img');
-
-            // There is also a result.url property which has the escaped version
-            container.append($("<img>").attr('src',result.tbUrl).hide());
-            
-
-            // newImg.src=result.tbUrl;
-            // imgContainer.appendChild(title);
-            // imgContainer.appendChild(newImg);
-
-            // Put our title + image in the content
-            // contentDiv.appendChild(imgContainer);
+            var url = result.tbUrl;
+            var img = ResultImage(url)
+            container.append(img);
            }
            // CycleThroughImages(container);
            ShowAllImages(container);
-          // Now add links to additional pages of search results.
-          // addPaginationLinks(imageSearch);
         }
+        ScrollDown();
+      }
+
+      function ResultImage(url){
+        var img = $("<img>");
+        img.on("load", function(){
+          ScrollDown();
+          console.log("loaded " + url);
+        });
+        img.attr('src', url);
+        img.hide();
+        return img;
       }
 
       function CycleThroughImages(container){
@@ -244,7 +197,7 @@
       }
 
 
-      function GoogleSearch(string){
+      function GoogleSearch(container, string){
          // Create an Image Search instance.
         imageSearch = new google.search.ImageSearch();
 
@@ -253,7 +206,7 @@
         imageSearch.setSearchCompleteCallback(this, searchComplete, null);
 
         imageSearch.setResultSetSize(8);
-
+        imageSearch.destination_container = container;
         imageSearch.execute(string);
         
       }
