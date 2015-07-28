@@ -14,14 +14,15 @@
     </style>
   </head>
   <body>
+
+
+    <div id="messages_container" style="height:500px; overflow: scroll;">
+    <ul id="messages"></ul>
+    </div>
     <div id="branding"  style="float: left;"></div><br />
     <fb:login-button scope="public_profile,email" onlogin="checkLoginState();">
     </fb:login-button>
     <div id="status">
-    </div>
-
-    <div id="messages_container" style="height:500px; overflow: scroll;">
-    <ul id="messages"></ul>
     </div>
     <form action="">
       <input id="m" autocomplete="off" /><button>Send</button>
@@ -89,7 +90,7 @@
       function ChatMessage(message){
         this.msg = message;
         this.author = GetName();
-        this.timestamp = new Date().getTime();
+        this.timestamp = new Date().toLocaleString();
       }
 
 
