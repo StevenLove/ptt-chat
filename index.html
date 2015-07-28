@@ -159,13 +159,20 @@
       function Label(chat_message){
         var label_text = LabelText(chat_message);
         var label_pic = LabelPicture(chat_message);
-        var label = $("<div>").text(label_text).css('display','inline-block').append(label_pic);
+        var label = $("<div>");
+        var text = $("<p>").text(label_text);
+        label.append(text);
+        label.append(label_pic);
+        // label.append($("<p>").text(label_text));
+        // label.append($("<p>").text(label_text)).css('inline-block');
+        label.css('display','inline-block');
+        label.css('margin-right',20);
         return label;
       }
       function LabelText(chat_message){
         var time = "(" + chat_message.timestamp + ")";
         var author = chat_message.author;
-        var label_text = time + " " + author + ": ";
+        var label_text = author;
         return label_text;
       }
       function LabelPicture(chat_message){
@@ -178,7 +185,7 @@
       function ChatLine(chat_message){
         var container = $('<li>');
         var label = Label(chat_message);
-        var images = $('<div>').css('display','inline-block');
+        var images = $('<div class="well">').css('display','inline-block');
         container.append(label);
         container.append(images);
         // container.append($("<div>").attr("class","clearfix"));
