@@ -60,8 +60,8 @@
     // For now, control use of the dev version or public version
     // by commenting out one of the two lines below
     //*********************************************
-    SetFacebookInitCallback();
-    // SetFacebookInitCallbackDev();
+    // SetFacebookInitCallback();
+    SetFacebookInitCallbackDev();
     // *********************************************
     LoadFacebookSDK();
   }
@@ -145,18 +145,47 @@
       function Label(chat_message){
         var time = "(" + chat_message.timestamp + ")";
         var author = chat_message.author;
-        var label = time + " " + author + ": ";
+        var label_text = time + " " + author + ": ";
+        var label = $("<div>").text(label_text).css('display','inline-block');
         return label;
       }
-      function ChatMessageContainer(chat_message){
-        var img_container = $("<span>");
-        var label = Label(chat_message);
+
+      function ChatLine(chat_message){
         var container = $('<li>');
-        container.text(label);
-        container.append(img_container);
-        container.height(150);
+        var label = Label(chat_message);
+        var images = $('<div>').css('display','inline-block');
+        container.append(label);
+        container.append(images);
+        // container.append($("<div>").attr("class","clearfix"));
+        container.attr("name",chat_message.author);
+        return container;
+      }
+
+
+      function ChatMessageContainer(chat_message){
+        var cur_author = chat_message.author;
+        var prev_container = $("#messages").children().last();
+        var prev_author = prev_container.attr("name");
+        var container;
+        if(prev_author && prev_author == cur_author){
+          container = prev_container;
+        }
+        else{
+          container = ChatLine(chat_message);
+          $("#messages").append(container);
+        }
+
+        console.log(container);
+
+        var img_container = $("<div>");
+        img_container.css('display','inline-block');
+        img_container.css('height',150);
+        img_container.css('width',150);
+        img_container.hide();
+
+        container.children().eq(1).append(img_container);
+
         GoogleSearch(img_container,chat_message.msg);
-        $("#messages").append(container);
       }
 
 
@@ -167,9 +196,15 @@
         var img = $("<img>");
         img.on("load", function(){
           ScrollDown();
+          img.parent().show();
         });
-        img.attr('src', url);
+        
+        img.css('display','inline-block');
         img.hide();
+        img.css('width',150);
+        img.css('height',150);
+        img.attr('src', url);
+        
         return img;
       }
 
@@ -264,12 +299,15 @@
                 var result = results[i];
                 var url = result.tbUrl;
                 var img = ResultImage(url)
+
                 img.on("load",function(){
-                  var img = $(this);
-                  var container = $(this).parent();
-                  // UpdateContainerDimensions(container,img);
+                  console.log("done");
                 });
                 container.append(img);
+
+                // setTimeout(function(){
+                // },3000);
+                
                }
                CycleThroughImages(container);
                // ShowAllImages(container);
