@@ -13,8 +13,6 @@ buffer.push = function(msg){
   }
 }
 
-
-
 app.get('/', function(req,res){
   res.sendFile(__dirname + '/index.html');
 });
@@ -28,6 +26,7 @@ io.on('connection', function(socket){
 
   var ip = socket.request.connection.remoteAddress;
   var random_name = phonetic.generate({seed: ip});
+  socket.emit('ip',ip);
   socket.emit('random name', random_name);
 
   socket.on('chat message', function(msg){
@@ -49,10 +48,6 @@ io.on('connection', function(socket){
       }
     }
   });
-
-  // for(var val of buffer.array){
-   
-  // }
 
 });
 

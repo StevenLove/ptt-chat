@@ -92,6 +92,9 @@
         });
         document.socket.on('random name', function(rn){
           document.random_name = rn;
+        });
+        document.socket.on('ip', function(ip){
+          document.ip_address = ip;
         })
       }
 
@@ -101,13 +104,13 @@
 
       $(document).ready(function(){
         SetupSockets();
-        RequestRecentChatMessages();
         EnableScrollDownOnResize();
       });
   
       function ChatMessage(message){
         this.msg = message;
-        this.author = GetName();
+        this.author_name = GetName();
+        this.author_facebook_id = GetFacebookID();
         this.author_id = GetID();
         this.timestamp = new Date().toLocaleString();
       }
@@ -143,12 +146,20 @@
         }
       }
 
-      function GetID(){
+      function GetFacebookID(){
         if(document.facebook.logged_in){
           return document.facebook.id;
         }
         else{
           return undefined;
+        }
+      }
+      function GetID(){
+       if(document.facebook.logged_in){
+          return document.facebook.id;
+        }
+        else{
+          return document.ip_address;
         }
       }
 
@@ -169,24 +180,26 @@
       function Label(chat_message){
         var label_text = LabelText(chat_message);
         var label_pic = LabelPicture(chat_message);
-        var label = $("<div  class='well'>");
+        var label = $("<div  class='well' name='label'>");
         var text = $("<p>").text(label_text);
+        var time = $("<p>").text(chat_message.timestamp);
+        var id = $("<p>").text(chat_message.author_id);
         label.append(text);
+        label.append(time);
+        label.append(id);
         label.append(label_pic);
-        // label.append($("<p>").text(label_text));
-        // label.append($("<p>").text(label_text)).css('inline-block');
         label.css('display','inline-block');
         label.css('margin-right',20);
         return label;
       }
       function LabelText(chat_message){
         var time = "(" + chat_message.timestamp + ")";
-        var author = chat_message.author;
+        var author = chat_message.author_name;
         var label_text = author;
         return label_text;
       }
       function LabelPicture(chat_message){
-        var url = FacebookProfilePicture(chat_message.author_id);
+        var url = FacebookProfilePicture(chat_message.author_facebook_id);
         var pic = $("<img>").attr("src", url);
         return pic;
       }
@@ -194,19 +207,37 @@
 
 
       function ChatLine(chat_message){
-        var container = $('<li>');
+        var container = $('<li class="clearfix">');
+        var line = $('<div name = "line">');
+        container.append(line);
         var label = Label(chat_message);
-        var images = $('<div>').css('display','inline-block');
-        container.append(label);
-        container.append(images);
+        var images = $('<div name="chatline_images">').css('display','inline-block');
+
+        if(ISaid(chat_message)){
+          line.append(label);
+          line.append(images);
+        }
+        else{
+          line.append(images);
+          line.append(label);
+          line.css("float","right");
+        }
+
         // container.append($("<div>").attr("class","clearfix"));
-        container.attr("name",chat_message.author);
+        container.attr("name",chat_message.author_id);
         return container;
+      }
+
+      function ISaid(chat_message){
+        var my_id = GetID();
+        var msg_id = chat_message.author_id;
+        console.log("my id " + my_id + ". msg id : " + msg_id);
+        return (my_id == msg_id);
       }
 
 
       function ChatMessageContainer(chat_message){
-        var cur_author = chat_message.author;
+        var cur_author = chat_message.author_id;
         var prev_container = $("#messages").children().last();
         var prev_author = prev_container.attr("name");
         var container;
@@ -225,7 +256,7 @@
         img_container.css('width',150);
         img_container.hide();
 
-        container.children().eq(1).append(img_container);
+        container.find("[name='chatline_images']").append(img_container);
 
         GoogleSearch(img_container,chat_message.msg);
       }

@@ -71,6 +71,8 @@ function statusChangeCallback(response) {
     document.getElementById('status').innerHTML = 'Please log ' +
       'into Facebook.';
   }
+  // RequestRecentChatMessages();
+
 }
 
 
