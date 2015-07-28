@@ -15,7 +15,14 @@
   </head>
   <body>
     <div id="branding"  style="float: left;"></div><br />
-      
+    <fb:login-button scope="public_profile,email" onlogin="checkLoginState();">
+    </fb:login-button>
+    <div id="status">
+    </div>
+
+    <div id="messages_container" style="height:500px; overflow: scroll;">
+    <ul id="messages"></ul>
+    </div>
     <form action="">
       <input id="m" autocomplete="off" /><button>Send</button>
     </form>
@@ -27,13 +34,8 @@
       the FB.login() function when clicked.
     -->
 
-    <fb:login-button scope="public_profile,email" onlogin="checkLoginState();">
-    </fb:login-button>
+ 
 
-    <div id="status">
-    </div>
-
-    <ul id="messages"></ul>
 
 
 
@@ -106,7 +108,9 @@
       });
 
       function ScrollDown(){
-        window.scrollTo(0,document.body.scrollHeight);
+        var div = $("#messages_container");
+        var height = div.prop("scrollHeight");
+        div.scrollTop(height);
       }
 
       function GetName(){
@@ -158,14 +162,12 @@
            // CycleThroughImages(container);
            ShowAllImages(container);
         }
-        ScrollDown();
       }
 
       function ResultImage(url){
         var img = $("<img>");
         img.on("load", function(){
           ScrollDown();
-          console.log("loaded " + url);
         });
         img.attr('src', url);
         img.hide();
