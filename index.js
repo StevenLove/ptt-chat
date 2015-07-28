@@ -2,6 +2,17 @@ var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 
+var buffer = {};
+buffer.array = [];
+buffer.push = function(msg){
+  buffer.array.push(msg);
+  if(buffer.array.length > 4){
+    buffer.array.shift();
+  }
+}
+
+
+
 app.get('/', function(req,res){
   res.sendFile(__dirname + '/index.html');
 });
@@ -16,11 +27,26 @@ io.on('connection', function(socket){
   socket.on('chat message', function(msg){
     console.log('message: ' + msg);
     io.emit('chat message', msg);
+    buffer.push(msg);
   });
 
   socket.on('disconnect', function(){
     console.log('user disconnected');
   });
+
+  socket.on('init',function(){
+    if(buffer.array.length){
+      for( var key in buffer.array){
+        var msg = buffer.array[key];
+        console.log(msg);
+        socket.emit('chat message', msg);
+      }
+    }
+  });
+
+  // for(var val of buffer.array){
+   
+  // }
 
 });
 

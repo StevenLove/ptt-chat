@@ -84,8 +84,22 @@
 
 
     <script>
-      var socket = io();
+      
+      function SetupSockets(){
+        document.socket = io();
+        document.socket.on('chat message', function(chat_message){
+          ChatMessageContainer(chat_message);
+        });
+      }
 
+      function RequestRecentChatMessages(){
+        document.socket.emit('init');
+      }
+
+      $(document).ready(function(){
+        SetupSockets();
+        RequestRecentChatMessages();
+      });
 
       function ChatMessage(message){
         this.msg = message;
@@ -99,14 +113,12 @@
         var chat_message = new ChatMessage(msg);
         console.log(msg);
         console.log(chat_message);
-        socket.emit('chat message', chat_message);
+        document.socket.emit('chat message', chat_message);
         $('#m').val('');
         return false;
       });
 
-      socket.on('chat message', function(chat_message){
-        ChatMessageContainer(chat_message);
-      });
+      
 
       function ScrollDown(){
         var div = $("#messages_container");
@@ -139,31 +151,9 @@
         $("#messages").append(container);
       }
 
-      function SetupGoogleSearch(){
-        google.load('search', '1');
-        google.setOnLoadCallback(function(){
-          google.search.Search.getBranding('branding');
-        })
-        window.imageSearch = {};
-      }
-      SetupGoogleSearch();
 
-      function searchComplete() {
-        // Check that we got results
-        if (imageSearch.results && imageSearch.results.length > 0) {
-          // Loop through our results, printing them to the page.
-          var results = imageSearch.results;
-          var container = imageSearch.destination_container;
-           for (var i = 0; i < results.length; i++) {
-            var result = results[i];
-            var url = result.tbUrl;
-            var img = ResultImage(url)
-            container.append(img);
-           }
-           // CycleThroughImages(container);
-           ShowAllImages(container);
-        }
-      }
+
+
 
       function ResultImage(url){
         var img = $("<img>");
@@ -200,19 +190,77 @@
       }
 
 
+</script>
+
+
+
+
+
+
+
+
+
+
+
+<script>
+
+      SetupGoogleSearch();
+
+      function SetupGoogleSearch(){
+        google.load('search', '1');
+        google.setOnLoadCallback(function(){
+          google.search.Search.getBranding('branding');
+        })
+      }
+
       function GoogleSearch(container, string){
          // Create an Image Search instance.
-        imageSearch = new google.search.ImageSearch();
+        var my_search = new google.search.ImageSearch();
 
         // Set searchComplete as the callback function when a search is 
         // complete.  The imageSearch object will have results in it.
-        imageSearch.setSearchCompleteCallback(this, searchComplete, null);
+        my_search.setSearchCompleteCallback(
+          this, 
+          function(){
+            if (my_search.results && my_search.results.length > 0) {
+              // Loop through our results, printing them to the page.
+              var results = my_search.results;
+              var container = my_search.destination_container;
+               for (var i = 0; i < results.length; i++) {
+                var result = results[i];
+                var url = result.tbUrl;
+                var img = ResultImage(url)
+                container.append(img);
+               }
+               // CycleThroughImages(container);
+               ShowAllImages(container);
+            }
+          },
+          null
+        );
 
-        imageSearch.setResultSetSize(8);
-        imageSearch.destination_container = container;
-        imageSearch.execute(string);
+        my_search.setResultSetSize(8);
+        my_search.destination_container = container;
+        my_search.execute(string);
         
       }
+
+      // function searchComplete() {
+      //   // Check that we got results
+      //   if (imageSearch.results && imageSearch.results.length > 0) {
+      //     // Loop through our results, printing them to the page.
+      //     var results = imageSearch.results;
+      //     var container = imageSearch.destination_container;
+      //      for (var i = 0; i < results.length; i++) {
+      //       var result = results[i];
+      //       var url = result.tbUrl;
+      //       var img = ResultImage(url)
+      //       container.append(img);
+      //      }
+      //      // CycleThroughImages(container);
+      //      ShowAllImages(container);
+      //   }
+      // }
 
 
 
