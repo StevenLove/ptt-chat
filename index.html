@@ -154,6 +154,7 @@
         var container = $('<li>');
         container.text(label);
         container.append(img_container);
+        container.height(150);
         GoogleSearch(img_container,chat_message.msg);
         $("#messages").append(container);
       }
@@ -196,9 +197,15 @@
         container.children().show();
       }
 
-      // function MaxImageHeight(container){
-
-      // }
+      function WholeNumberMax(a,b){
+        if(typeof a !== 'number'){
+          a = 0;
+        }
+        if(typeof b !== 'number'){
+          b = 0;
+        }
+        return Math.max(a,b);
+      }
 
 
 </script>
@@ -224,6 +231,22 @@
         })
       }
 
+      function UpdateContainerDimensions(container, img){
+        var img_h = img.get(0).naturalHeight;
+        var old_height = container.prop("max_height");
+        var new_height = WholeNumberMax(old_height,img_h);
+        container.prop("max_height",new_height);
+        container.height(new_height);
+        console.log(new_height);
+        // console.log(container.height());
+
+        var img_w = img.get(0).naturalWidth;
+        var old_width = container.prop("max_width");
+        var new_width = WholeNumberMax(old_width,img_w);
+        container.prop("max_width",new_width);
+        container.css("width", new_width);
+      }
+
       function GoogleSearch(container, string){
          // Create an Image Search instance.
         var my_search = new google.search.ImageSearch();
@@ -241,10 +264,15 @@
                 var result = results[i];
                 var url = result.tbUrl;
                 var img = ResultImage(url)
+                img.on("load",function(){
+                  var img = $(this);
+                  var container = $(this).parent();
+                  // UpdateContainerDimensions(container,img);
+                });
                 container.append(img);
                }
-               // CycleThroughImages(container);
-               ShowAllImages(container);
+               CycleThroughImages(container);
+               // ShowAllImages(container);
             }
           },
           null
