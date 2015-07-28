@@ -89,10 +89,10 @@
         document.socket = io();
         document.socket.on('chat message', function(chat_message){
           ChatMessageContainer(chat_message);
-          console.log("picture");
-          console.log(document.facebook.picture);
-
         });
+        document.socket.on('random name', function(rn){
+          document.random_name = rn;
+        })
       }
 
       function RequestRecentChatMessages(){
@@ -103,9 +103,8 @@
         SetupSockets();
         RequestRecentChatMessages();
         EnableScrollDownOnResize();
-
       });
-
+  
       function ChatMessage(message){
         this.msg = message;
         this.author = GetName();
@@ -113,12 +112,9 @@
         this.timestamp = new Date().toLocaleString();
       }
 
-
       $('form').submit(function(){
         var msg = $('#m').val();
         var chat_message = new ChatMessage(msg);
-        console.log(msg);
-        console.log(chat_message);
         document.socket.emit('chat message', chat_message);
         $('#m').val('');
         return false;
@@ -139,27 +135,41 @@
       }
 
       function GetName(){
-        if(document.facebook.name){
+        if(document.facebook.logged_in){
           return document.facebook.name;
         }
         else{
-          return "Anonymous";
+          return "Anonymous " + document.random_name;
         }
       }
 
       function GetID(){
-         if(document.facebook.id){
+        if(document.facebook.logged_in){
           return document.facebook.id;
         }
         else{
-          return 1;
+          return undefined;
         }
       }
+
+      function RandomWord(){
+        var requestStr = "http://randomword.setgetgo.com/get.php";
+        $.ajax({
+            type: "GET",
+            url: requestStr,
+            dataType: "jsonp",
+            jsonpCallback: 'RandomWordComplete'
+        });
+      }
+      function RandomWordComplete(data){
+        document.random_word = data.Word;
+      }
+      RandomWord();
 
       function Label(chat_message){
         var label_text = LabelText(chat_message);
         var label_pic = LabelPicture(chat_message);
-        var label = $("<div>");
+        var label = $("<div  class='well'>");
         var text = $("<p>").text(label_text);
         label.append(text);
         label.append(label_pic);
@@ -176,7 +186,8 @@
         return label_text;
       }
       function LabelPicture(chat_message){
-        var pic = $("<img>").attr("src",FacebookProfilePicture(chat_message.author_id));
+        var url = FacebookProfilePicture(chat_message.author_id);
+        var pic = $("<img>").attr("src", url);
         return pic;
       }
 
@@ -185,7 +196,7 @@
       function ChatLine(chat_message){
         var container = $('<li>');
         var label = Label(chat_message);
-        var images = $('<div class="well">').css('display','inline-block');
+        var images = $('<div>').css('display','inline-block');
         container.append(label);
         container.append(images);
         // container.append($("<div>").attr("class","clearfix"));
@@ -207,7 +218,6 @@
           $("#messages").append(container);
         }
 
-        console.log(container);
 
         var img_container = $("<div>");
         img_container.css('display','inline-block');
@@ -240,6 +250,7 @@
         return img;
       }
 
+
       function CycleThroughImages(container){
         ShowNextImage(container,0);
       }
@@ -253,7 +264,7 @@
         ShowOneImage(container,index);
         setTimeout(function(){
           ShowNextImage(container,index+1);
-        },2000);
+        },3000);
       }
       function ShowOneImage(container,index){
         container.children().hide();
@@ -304,7 +315,7 @@
         var new_height = WholeNumberMax(old_height,img_h);
         container.prop("max_height",new_height);
         container.height(new_height);
-        console.log(new_height);
+        // console.log(new_height);
         // console.log(container.height());
 
         var img_w = img.get(0).naturalWidth;
@@ -331,18 +342,9 @@
                 var result = results[i];
                 var url = result.tbUrl;
                 var img = ResultImage(url)
-
-                img.on("load",function(){
-                  console.log("done");
-                });
                 container.append(img);
-
-                // setTimeout(function(){
-                // },3000);
-                
                }
                CycleThroughImages(container);
-               // ShowAllImages(container);
             }
           },
           null

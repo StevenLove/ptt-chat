@@ -1,12 +1,14 @@
 var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
+var phonetic = require('phonetic');
 
 var buffer = {};
 buffer.array = [];
+buffer.max = 20;
 buffer.push = function(msg){
   buffer.array.push(msg);
-  if(buffer.array.length > 4){
+  if(buffer.array.length > buffer.max){
     buffer.array.shift();
   }
 }
@@ -23,6 +25,10 @@ app.get('/facebook.js',function(req,res){
 
 io.on('connection', function(socket){
   console.log('a user connected');
+
+  var ip = socket.request.connection.remoteAddress;
+  var random_name = phonetic.generate({seed: ip});
+  socket.emit('random name', random_name);
 
   socket.on('chat message', function(msg){
     console.log('message: ' + msg);
