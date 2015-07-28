@@ -89,6 +89,9 @@
         document.socket = io();
         document.socket.on('chat message', function(chat_message){
           ChatMessageContainer(chat_message);
+          console.log("picture");
+          console.log(document.facebook.picture);
+
         });
       }
 
@@ -100,11 +103,13 @@
         SetupSockets();
         RequestRecentChatMessages();
         EnableScrollDownOnResize();
+
       });
 
       function ChatMessage(message){
         this.msg = message;
         this.author = GetName();
+        this.author_id = GetID();
         this.timestamp = new Date().toLocaleString();
       }
 
@@ -142,13 +147,33 @@
         }
       }
 
+      function GetID(){
+         if(document.facebook.id){
+          return document.facebook.id;
+        }
+        else{
+          return 1;
+        }
+      }
+
       function Label(chat_message){
+        var label_text = LabelText(chat_message);
+        var label_pic = LabelPicture(chat_message);
+        var label = $("<div>").text(label_text).css('display','inline-block').append(label_pic);
+        return label;
+      }
+      function LabelText(chat_message){
         var time = "(" + chat_message.timestamp + ")";
         var author = chat_message.author;
         var label_text = time + " " + author + ": ";
-        var label = $("<div>").text(label_text).css('display','inline-block');
-        return label;
+        return label_text;
       }
+      function LabelPicture(chat_message){
+        var pic = $("<img>").attr("src",FacebookProfilePicture(chat_message.author_id));
+        return pic;
+      }
+
+
 
       function ChatLine(chat_message){
         var container = $('<li>');

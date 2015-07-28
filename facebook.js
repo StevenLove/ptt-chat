@@ -86,5 +86,10 @@ function testAPI() {
     document.getElementById('status').innerHTML =
       'Thanks for logging in, ' + response.name + '!';
     document.facebook.name = response.name;
+    document.facebook.id = response.id;
   });
+}
+
+function FacebookProfilePicture(user_id){
+ return "http://graph.facebook.com/" + user_id + "/picture?type=normal"
 }
