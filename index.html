@@ -105,6 +105,7 @@
       $(document).ready(function(){
         SetupSockets();
         EnableScrollDownOnResize();
+        RequestRecentChatMessages();
       });
   
       function ChatMessage(message){
@@ -209,6 +210,7 @@
       function ChatLine(chat_message){
         var container = $('<li class="clearfix">');
         var line = $('<div name = "line">');
+        var content = $('<div name = "content">');
         container.append(line);
         var label = Label(chat_message);
         var images = $('<div name="chatline_images">').css('display','inline-block');
@@ -218,9 +220,11 @@
           line.append(images);
         }
         else{
-          line.append(images);
           line.append(label);
-          line.css("float","right");
+          line.append(images);
+          // line.append(images).css("float","left");
+          // line.append(label).css("float","right");
+          // line.css("float","right");
         }
 
         // container.append($("<div>").attr("class","clearfix"));
