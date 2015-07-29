@@ -5,7 +5,7 @@
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
       body { font: 13px Helvetica, Arial; }
-      form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
+      #controls{ background:wheat; padding: 3px; position: fixed; bottom: 0; width: 100%; }
       form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
       form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
       #messages { list-style-type: none; margin: 0; padding: 0; }
@@ -16,17 +16,34 @@
   <body>
 
 
-    <div id="messages_container" style="height:500px; overflow: scroll;">
+    <div id="messages_container" >
     <ul id="messages"></ul>
     </div>
-    <div id="branding"  style="float: left;"></div><br />
-    <fb:login-button scope="public_profile,email" onlogin="checkLoginState();">
-    </fb:login-button>
-    <div id="status">
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <div id="controls">
+      <div id="branding"  style="float: left;"></div><br />
+      <fb:login-button scope="public_profile,email" onlogin="checkLoginState();">
+      </fb:login-button>
+      <div id="status">
+      </div>
+      <div class="col-lg-12 col-xs-12" >
+      <div class="input-group">
+        <span class="input-group-btn">
+          <button id="send_button" class="btn btn-info" type="button">
+            <span class="glyphicon glyphicon-send" aria-hidden="true"></span> Send
+          </button>
+        </span>
+        <input id="m" type="text" class="form-control" autocomplete="off" placeholder="Your Message Here...">
+      </div>
     </div>
-    <form action="">
-      <input id="m" autocomplete="off" /><button>Send</button>
-    </form>
+    </div>
+
+
 
 
     <!--
@@ -47,6 +64,7 @@
     <script src = "/socket.io/socket.io.js"></script>
     <!-- Latest compiled and minified CSS -->
 <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+
 
 <!-- Latest compiled JavaScript -->
 <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
@@ -106,8 +124,38 @@
         SetupSockets();
         EnableScrollDownOnResize();
         RequestRecentChatMessages();
+        EnableSendButton();
       });
   
+      function EnableSendButton(){
+        $("#send_button").click(function(){
+          HitSend();
+        });
+        EnableEnterToSend();
+      }
+
+
+      function EmitChatMessage(chat_message){
+        document.socket.emit('chat message', chat_message);
+      }
+      function HitSend(){
+        var msg = $('#m').val();
+        EmitChatMessage(new ChatMessage(msg));
+        $('#m').val('');
+        return false;
+      }
+      function EnableEnterToSend(){
+        $("#m").keydown(function(event){
+          if(event.keyCode == 13) {
+            event.preventDefault();
+            HitSend();
+            return false;
+          }
+        });
+      }
+
+
+
       function ChatMessage(message){
         this.msg = message;
         this.author_name = GetName();
@@ -116,18 +164,12 @@
         this.timestamp = new Date().toLocaleString();
       }
 
-      $('form').submit(function(){
-        var msg = $('#m').val();
-        var chat_message = new ChatMessage(msg);
-        document.socket.emit('chat message', chat_message);
-        $('#m').val('');
-        return false;
-      });
+
 
       
 
       function ScrollDown(){
-        var div = $("#messages_container");
+        var div = $("body");
         var height = div.prop("scrollHeight");
         div.scrollTop(height);
       }
@@ -181,7 +223,7 @@
       function Label(chat_message){
         var label_text = LabelText(chat_message);
         var label_pic = LabelPicture(chat_message);
-        var label = $("<div  class='well' name='label'>");
+        var label = $("<div  class='well col-md-2 col-sm-2' name='label'>");
         var text = $("<p>").text(label_text);
         var time = $("<p>").text(chat_message.timestamp);
         var id = $("<p>").text(chat_message.author_id);
@@ -213,13 +255,14 @@
         var content = $('<div name = "content">');
         container.append(line);
         var label = Label(chat_message);
-        var images = $('<div name="chatline_images">').css('display','inline-block');
+        var images = $('<div name="chatline_images" class="col-md-8 col-sm-8">').css('display','inline-block');
 
         if(ISaid(chat_message)){
           line.append(label);
           line.append(images);
         }
         else{
+          // line.append($("<div class='col-md-2'>"));
           line.append(label);
           line.append(images);
           // line.append(images).css("float","left");
@@ -256,8 +299,8 @@
 
         var img_container = $("<div>");
         img_container.css('display','inline-block');
-        img_container.css('height',150);
-        img_container.css('width',150);
+        // img_container.css('height',150);
+        // img_container.css('width',150);
         img_container.hide();
 
         container.find("[name='chatline_images']").append(img_container);
@@ -276,7 +319,7 @@
           img.parent().show();
         });
         
-        img.css('display','inline-block');
+        // img.css('display','inline-block');
         img.hide();
         img.css('width',150);
         img.css('height',150);

@@ -89,5 +89,5 @@ function testAPI() {
 }
 
 function FacebookProfilePicture(user_id){
- return "http://graph.facebook.com/" + user_id + "/picture?type=normal"
+ return "http://graph.facebook.com/" + user_id + "/picture?type=small"
 }
