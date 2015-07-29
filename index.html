@@ -11,6 +11,7 @@
       #messages { list-style-type: none; margin: 0; padding: 0; }
       #messages li { padding: 5px 10px; }
       #messages li:nth-child(odd) { background: #eee; }
+      #messages li:nth-child(even) { background: #ddd; }
     </style>
   </head>
   <body>
@@ -161,7 +162,7 @@
         this.author_name = GetName();
         this.author_facebook_id = GetFacebookID();
         this.author_id = GetID();
-        this.timestamp = new Date().toLocaleString();
+        this.timestamp = new Date().getTime();
       }
 
 
@@ -223,16 +224,21 @@
       function Label(chat_message){
         var label_text = LabelText(chat_message);
         var label_pic = LabelPicture(chat_message);
-        var label = $("<div  class='well col-md-2 col-sm-2' name='label'>");
+        var label = $("<span  class='well' name='label'>");
         var text = $("<p>").text(label_text);
-        var time = $("<p>").text(chat_message.timestamp);
-        var id = $("<p>").text(chat_message.author_id);
+        var date = new Date(chat_message.timestamp);
+        var time = $("<p>").text(date.toLocaleTimeString());
         label.append(text);
         label.append(time);
-        label.append(id);
         label.append(label_pic);
+        // label.css('float','left');
+        label.width(200);
+        // label.height(150);
+        // label.css('position','relative');
+        // label.css('top',10);
         label.css('display','inline-block');
-        label.css('margin-right',20);
+        // label.css('vertical-align','middle');
+        // label.css('margin-right',20);
         return label;
       }
       function LabelText(chat_message){
@@ -255,7 +261,12 @@
         var content = $('<div name = "content">');
         container.append(line);
         var label = Label(chat_message);
-        var images = $('<div name="chatline_images" class="col-md-8 col-sm-8">').css('display','inline-block');
+        var images = $('<span name="chatline_images">').css('display','inline-block');//.css('position','relative').css('left',160).css('top',-160);
+        // var max_width = line.css('width');
+        // images.css('width',max_width-160);
+        // label.css('height','100%');
+        label.css('height',150);
+        label.css('width', 150);
 
         if(ISaid(chat_message)){
           line.append(label);
