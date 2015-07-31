@@ -16,6 +16,10 @@ buffer.push = function(msg){
 
 var active_users = {};
 
+var cust_id;
+const BOTID = "f6d4afd83e34564d";
+
+
 function AddUser(user){
   active_users.push(user);
 }
@@ -95,7 +99,7 @@ io.on('connection', function(socket){
   socket.on('splittable chat message', function(unsplit_chat_message){
     OnSplittableMessage(unsplit_chat_message);
     if(IsDirectedAtBot(unsplit_chat_message)){
-      EmitChatbotResponseTo(socket, unsplit_chat_message.msg);
+      EmitChatbotResponseToAll(unsplit_chat_message.msg);
     }
   });
 
@@ -213,7 +217,7 @@ function IsDirectedAtBot(unsplit_chat_message){
 }
 
 function ParseChatbotXML(xml_string){
-  console.log(xml_string);
+  // console.log(xml_string);
   var parsed = {};
 
   if(xml_string){
@@ -234,17 +238,26 @@ function ParseChatbotXML(xml_string){
   return parsed;
 }
 
-function EmitChatbotResponseTo(socket, message){
-  const BOTID = "f6d4afd83e34564d";
+function BuildURL(message){
   var encoded_message = encodeURIComponent(message);
-
   var url_prefix = "http://www.pandorabots.com/pandora/talk-xml";
   var url_botid = "botid="+BOTID;
-  var url_custid = "custid=" + socket.id;
   var url_msg = "input="+encoded_message;
-  var url_args = url_botid + "&" + url_custid + "&" + url_msg;
+  var url_args;
+  if(cust_id){
+    var url_custid = "custid=" + cust_id;
+    url_args = url_botid + "&" + url_custid + "&" + url_msg;
+  }
+  else{
+    url_args = url_botid + "&" + url_msg;
+  }
   url = url_prefix + "?" + url_args;
+  return url;
+}
 
+function EmitChatbotResponseToAll(message){
+  var url = BuildURL(message);
+  // console.log(url);
   // Send GET request to pandora bots Lauren
   http.get(url, function(pb_response) {
     var body = '';
@@ -255,6 +268,9 @@ function EmitChatbotResponseTo(socket, message){
     pb_response.on('end', function() {
       var bot_response_object = ParseChatbotXML(body);
       var bot_text = bot_response_object.that;
+      if(!cust_id){
+        cust_id = bot_response_object.custid;
+      }
 
       var chatbot_chat_message = {
         msg: bot_text,

@@ -160,14 +160,14 @@ function FacebookLoggedInCallback() {
       const LAUREN_ID = 2;
       function PopulateUserDropdown(user_list){
         AddUserToDropdown(EVERYONE_ID,"Everyone");
-        AddUserToDropdown(LAUREN_ID, "Chatbot Lauren");
+        AddUserToDropdown(LAUREN_ID, "Everyone + Chatbot Lauren");
         for(var index in user_list){
           var user = user_list[index];
           var name = user.name
           if(user.socket_id == document.socket.id){
             name = name + " (You)";
           }
-          AddUserToDropdown(user.socket_id, name);
+          AddDisabledUserToDropdown(user.socket_id, name);
         }
       }
 
@@ -176,6 +176,9 @@ function FacebookLoggedInCallback() {
       }
       function AddUserToDropdown(id,name){
         $("#user_dropdown").append("<option value = " + id + ">" + name + "</option>");
+      }
+      function AddDisabledUserToDropdown(id,name){
+        $("#user_dropdown").append("<option class='disabled' value = " + id + " disabled >" + name + "</option>");
       }
 
       function ParseChatbotMessage(chat_message){
