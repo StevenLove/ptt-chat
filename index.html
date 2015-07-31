@@ -5,41 +5,51 @@
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
       body { font: 13px Helvetica, Arial; }
-      #controls{ background:wheat; padding: 3px; position: fixed; bottom: 0; width: 100%; }
+      #controls{ background:wheat; padding: 3px; position: fixed; bottom: 0; width: 100%; height: 120px;}
       form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
       form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
-      #messages { list-style-type: none; margin: 0; padding: 0; }
+      #messages { list-style-type: none; margin: 0; padding: 0;}
       #messages li { padding: 5px 10px; }
       #messages li:nth-child(odd) { background: #eee; }
       #messages li:nth-child(even) { background: #ddd;}
+
+      html, body{
+        height:100%;
+      }
+
     </style>
   </head>
   <body>
 
 
-    <div id="messages_container" >
+    <div id="messages_container" style="height:80%; overflow-y:scroll" >
     <ul id="messages"></ul>
     </div>
-    <br>
-    <br>
-    <br>
-    <br>
-    <br>
-    <br>
+
     <div id="controls">
-      <div id="branding"  style="float: left;"></div><br />
-      <fb:login-button scope="public_profile,email" onlogin="checkLoginState();">
-      </fb:login-button>
-      <div id="status">
+      <span id="branding" style="float:left;" ></span>
+      <div id="accessories" style="float:right;">
+        
+
+        <fb:login-button scope="public_profile,email" size="xlarge" onlogin="checkLoginState();">
+        </fb:login-button>
+
+        <span id="status">
+        </span>
+
+        <div class="input-group input-group-lg" style="float:right;">
+          <label for="user_dropdown">Send To</label>
+          <select class="form-control" id="user_dropdown"></select>
+        </div>
       </div>
-      <div class="col-lg-12 col-xs-12" >
-      <div class="input-group">
-        <span class="input-group-btn">
-          <button id="send_button" class="btn btn-info" type="button">
+      <div class="col-lg-12 col-xs-12">
+      <div class="input-group ">
+        <span class="input-group-btn" >
+          <button id="send_button" class="btn btn-info btn-lg" type="button">
             <span class="glyphicon glyphicon-send" aria-hidden="true"></span> Send
           </button>
         </span>
-        <input id="m" type="text" class="form-control" autocomplete="off" placeholder="Your Message Here...">
+        <input id="m" type="text" class="form-control input-lg" autocomplete="off" placeholder="Your Message Here...">
       </div>
     </div>
     </div>
@@ -79,13 +89,27 @@
     // For now, control use of the dev version or public version
     // by commenting out one of the two lines below
     //*********************************************
-    SetFacebookInitCallback();
-    // SetFacebookInitCallbackDev();
+    // SetFacebookInitCallback();
+    SetFacebookInitCallbackDev();
     // *********************************************
     LoadFacebookSDK();
   }
 
   SetupFacebook();
+
+  // Here we run a very simple test of the Graph API after login is
+// successful.  See statusChangeCallback() for when this call is made.
+function FacebookLoggedInCallback() {
+  FB.api('/me', function(response) {
+    document.getElementById('status').innerHTML =
+      'Thanks for logging in, ' + response.name + '!';
+    document.facebook.response = response;
+    document.facebook.name = response.name;
+    document.facebook.id = response.id;
+    document.facebook.logged_in = true;
+    document.socket.emit("facebook login", response);
+  });
+}
 </script>
 
 
@@ -120,12 +144,39 @@
           var msg = ParseChatbotMessage(chatbot_message);
           ChatMessageContainer(msg);
         });
+        // document.socket.on('connection message', function(con_msg){
+        //   $("#user_dropdown").append("<option value = " + con_msg.user_id + ">" + con_msg.user_name + "</option>");
+        // });
+        // document.socket.on('disconnection message', function(dis_msg){
+        //   $("#user_dropdown").children("option[value='" + dis_msg.user_id + "']").remove();
+        // });
+        document.socket.on('update users', function(user_list){
+          ClearUserDropdown();
+          PopulateUserDropdown(user_list);
+        });
       }
 
-  //     var xml = "<rss version='2.0'><channel><title>RSS Title</title></channel></rss>",
-  // xmlDoc = $.parseXML( xml ),
-  // $xml = $( xmlDoc ),
-  // $title = $xml.find( "title" );
+      const EVERYONE_ID = 1;
+      const LAUREN_ID = 2;
+      function PopulateUserDropdown(user_list){
+        AddUserToDropdown(EVERYONE_ID,"Everyone");
+        AddUserToDropdown(LAUREN_ID, "Chatbot Lauren");
+        for(var index in user_list){
+          var user = user_list[index];
+          var name = user.name
+          if(user.socket_id == document.socket.id){
+            name = name + " (You)";
+          }
+          AddUserToDropdown(user.socket_id, name);
+        }
+      }
+
+      function ClearUserDropdown(){
+        $("#user_dropdown").empty();
+      }
+      function AddUserToDropdown(id,name){
+        $("#user_dropdown").append("<option value = " + id + ">" + name + "</option>");
+      }
 
       function ParseChatbotMessage(chat_message){
         var xml_string = chat_message.msg;
@@ -212,12 +263,13 @@
         this.author_facebook_id = GetFacebookID();
         this.author_id = GetMyID();
         this.timestamp = new Date().getTime();
+        this.directed_at_bot = $("#user_dropdown").val() == LAUREN_ID;
       }
 
       
 
       function ScrollDown(){
-        var div = $("body");
+        var div = $("#messages_container");
         var height = div.prop("scrollHeight");
         div.scrollTop(height);
       }

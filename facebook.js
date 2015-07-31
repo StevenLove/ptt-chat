@@ -60,7 +60,7 @@ function statusChangeCallback(response) {
   // for FB.getLoginStatus().
   if (response.status === 'connected') {
     // Logged into your app and Facebook.
-    testAPI();
+    FacebookLoggedInCallback();
   } else if (response.status === 'not_authorized') {
     // The person is logged into Facebook, but not your app.
     document.getElementById('status').innerHTML = 'Please log ' +
@@ -76,17 +76,7 @@ function statusChangeCallback(response) {
 }
 
 
-// Here we run a very simple test of the Graph API after login is
-// successful.  See statusChangeCallback() for when this call is made.
-function testAPI() {
-  FB.api('/me', function(response) {
-    document.getElementById('status').innerHTML =
-      'Thanks for logging in, ' + response.name + '!';
-    document.facebook.name = response.name;
-    document.facebook.id = response.id;
-    document.facebook.logged_in = true;
-  });
-}
+
 
 function FacebookProfilePicture(user_id){
  return "http://graph.facebook.com/" + user_id + "/picture?type=small"
