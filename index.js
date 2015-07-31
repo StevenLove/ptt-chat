@@ -62,7 +62,6 @@ app_http.listen(3000,function(){
 });
 
 function OnChatMessage(chat_message){
-    console.log('message: ' + chat_message);
     io.emit('chat message', chat_message);
     buffer.push(chat_message);
 }
@@ -78,19 +77,33 @@ function OnSplittableMessage(unsplit_chat_message){
 }
 
 function ParseChatbotXML(xml_string){
-  var xmldoc = require('xmldoc');
-  var doc = new xmldoc.XmlDocument(xml_string);
-  var response = doc.childNamed("that");
-  var response_text = response.val;
-  console.log(response_text);
-  return response_text;
+  var parsed = {};
+
+  if(xml_string){
+    var xmldoc = require('xmldoc');
+    var doc = new xmldoc.XmlDocument(xml_string);
+    var result = doc;
+    var input = doc.childNamed("input");
+    var that = doc.childNamed("that");
+    // console.log(doc);
+    parsed.status = result.attr.status;
+    parsed.botid = result.attr.botid;
+    parsed.custid = result.attr.custid
+    parsed.input = input.val;
+    parsed.that = that.val;
+  }
+
+  console.log(parsed);
+  return parsed;
 }
 
 function EmitChatbotResponseTo(message){
   const BOTID = "f6d4afd83e34564d";
+  var encoded_message = encodeURIComponent(message);
+
   var url_prefix = "http://www.pandorabots.com/pandora/talk-xml";
   var url_botid = "botid="+BOTID;
-  var url_msg = "input="+message;
+  var url_msg = "input="+encoded_message;
   var url_args = url_botid + "&" + url_msg;
   url = url_prefix + "?" + url_args;
 
@@ -102,15 +115,16 @@ function EmitChatbotResponseTo(message){
       body += chunk;
     });
     pb_response.on('end', function() {
-      console.log(body);
-      var bot_response = ParseChatbotXML(body);
+      var bot_response_object = ParseChatbotXML(body);
+      var bot_text = bot_response_object.that;
+
       var chatbot_chat_message = {
-        msg: bot_response,
+        msg: bot_text,
         timestamp: new Date().getTime(),
         author_name: "Chatbot Lauren",
         author_id: BOTID
       }
-      io.emit('chat message',chatbot_chat_message);
+      OnSplittableMessage(chatbot_chat_message);
     });
   }).on('error', function(e) {
       console.log("PB GET Got error: ", e);
