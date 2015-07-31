@@ -117,7 +117,25 @@
         });
         document.socket.on('chatbot message', function(chatbot_message){
           console.log(chatbot_message);
+          var msg = ParseChatbotMessage(chatbot_message);
+          ChatMessageContainer(msg);
         });
+      }
+
+  //     var xml = "<rss version='2.0'><channel><title>RSS Title</title></channel></rss>",
+  // xmlDoc = $.parseXML( xml ),
+  // $xml = $( xmlDoc ),
+  // $title = $xml.find( "title" );
+
+      function ParseChatbotMessage(chat_message){
+        var xml_string = chat_message.msg;
+        var xml_doc = $.parseXML(xml_string);
+        $xml = $(xml_doc);
+        $bot_response = $xml.find("that");
+        var bot_response = $bot_response.text();
+        console.log(bot_response);
+        chat_message.msg = bot_response;
+        return chat_message;
       }
 
       function RequestRecentChatMessages(){
@@ -139,35 +157,42 @@
       }
 
 
-      function EmitChatMessage(chat_message){
-        document.socket.emit('chat message', chat_message);
-      }
+      // function EmitChatMessage(chat_message){
+      //   document.socket.emit('chat message', chat_message);
+      // }
       function HitSend(){
         var input = GetInput();
         ClearInput();
-        var words = SplitMessage(input);
-        for(var index in words){
-          var word = words[index];
-          SendMsg(word);
-        }
+        // var words = SplitMessage(input);
+        // for(var index in words){
+        //   var word = words[index];
+        //   SendMsg(word);
+        // }
+        SendSplittableMsg(input);
         return false;
       }
       function GetInput(){
         var input = $('#m').val();
         return input;
       }
-      function SendMsg(msg){
-        EmitChatMessage(new ChatMessage(msg));
+      // function SendMsg(msg){
+      //   EmitChatMessage(new ChatMessage(msg));
+      // }
+      function SendSplittableMsg(msg){
+        EmitSplittableMessage(new ChatMessage(msg));
+      }
+      function EmitSplittableMessage(splittable){
+        document.socket.emit('splittable chat message', splittable);
       }
       function ClearInput(){
         $('#m').val('');
       }
-      function SplitMessage(msg){
-        var words = msg.split(" ").filter(Boolean);
-        console.log(msg);
-        console.log(words);
-        return words;
-      }
+      // function SplitMessage(msg){
+      //   var words = msg.split(" ").filter(Boolean);
+      //   console.log(msg);
+      //   console.log(words);
+      //   return words;
+      // }
       function EnableEnterToSend(){
         $("#m").keydown(function(event){
           if(event.keyCode == 13) {
