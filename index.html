@@ -79,8 +79,8 @@
     // For now, control use of the dev version or public version
     // by commenting out one of the two lines below
     //*********************************************
-    // SetFacebookInitCallback();
-    SetFacebookInitCallbackDev();
+    SetFacebookInitCallback();
+    // SetFacebookInitCallbackDev();
     // *********************************************
     LoadFacebookSDK();
   }
@@ -140,10 +140,30 @@
         document.socket.emit('chat message', chat_message);
       }
       function HitSend(){
-        var msg = $('#m').val();
-        EmitChatMessage(new ChatMessage(msg));
-        $('#m').val('');
+        var input = GetInput();
+        ClearInput();
+        var words = SplitMessage(input);
+        for(var index in words){
+          var word = words[index];
+          SendMsg(word);
+        }
         return false;
+      }
+      function GetInput(){
+        var input = $('#m').val();
+        return input;
+      }
+      function SendMsg(msg){
+        EmitChatMessage(new ChatMessage(msg));
+      }
+      function ClearInput(){
+        $('#m').val('');
+      }
+      function SplitMessage(msg){
+        var words = msg.split(" ").filter(Boolean);
+        console.log(msg);
+        console.log(words);
+        return words;
       }
       function EnableEnterToSend(){
         $("#m").keydown(function(event){
@@ -156,16 +176,13 @@
       }
 
 
-
       function ChatMessage(message){
         this.msg = message;
-        this.author_name = GetName();
+        this.author_name = GetMyName();
         this.author_facebook_id = GetFacebookID();
         this.author_id = GetID();
-        this.timestamp = new Date().toLocaleString();
+        this.timestamp = new Date().getTime();
       }
-
-
 
       
 
@@ -181,7 +198,7 @@
         })
       }
 
-      function GetName(){
+      function GetMyName(){
         if(document.facebook.logged_in){
           return document.facebook.name;
         }
@@ -198,7 +215,7 @@
           return undefined;
         }
       }
-      function GetID(){
+      function GetMyID(){
        if(document.facebook.logged_in){
           return document.facebook.id;
         }
@@ -277,25 +294,66 @@
       }
 
       function ISaid(chat_message){
-        var my_id = GetID();
+        var my_id = GetMyID();
         var msg_id = chat_message.author_id;
-        console.log("my id " + my_id + ". msg id : " + msg_id);
         return (my_id == msg_id);
       }
 
+      function IsSameSentence(prev_message, next_message){
+        return (
+          BothExist(prev_message,next_message) &&
+          SameAuthor(prev_message,next_message) &&
+          AreCloseEnough(prev_message,next_message)
+            );
+      }
+      function BothExist(cm1,cm2){
+        return(cm1 && cm2);
+      }
+      function AreCloseEnough(cm1, cm2){
+        // times are in ms
+        var time1 = cm1.timestamp;
+        var time2 = cm2.timestamp;
+        return AreWithin(time1,time2,1000);
+      }
+      function AreWithin(a,b,range){
+        var diff = Math.abs(b-a);
+        return diff <= range;
+      }
+
+      function SameAuthor(cm1,cm2){
+        if(!cm1 || !cm2){
+          return false;
+        }
+        var author1 = cm1.author_id;
+        var author2 = cm2.author_id;
+        return (author1 == author2);
+      }
 
       function ChatMessageContainer(chat_message){
-        var cur_author = chat_message.author_id;
+        // var cur_author = chat_message.author_id;
         var prev_container = $("#messages").children().last();
-        var prev_author = prev_container.attr("name");
+        // var prev_author = prev_container.attr("name");
         var container;
-        if(prev_author && prev_author == cur_author){
+
+        // if(prev_author && prev_author == cur_author){
+        //   container = prev_container;
+        // }
+        // else{
+        //   container = ChatLine(chat_message);
+        //   $("#messages").append(container);
+        // }
+        // console.log(document.prev_chat_message);
+        // console.log(chat_message);
+        // console.log("----");
+
+        if(IsSameSentence(document.prev_chat_message,chat_message)){
           container = prev_container;
         }
         else{
           container = ChatLine(chat_message);
           $("#messages").append(container);
         }
+        document.prev_chat_message = chat_message;
 
 
         var img_container = $("<div>");
