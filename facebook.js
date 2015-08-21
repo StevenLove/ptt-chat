@@ -79,5 +79,5 @@ function statusChangeCallback(response) {
 
 
 function FacebookProfilePicture(user_id){
- return "http://graph.facebook.com/" + user_id + "/picture?type=small"
+ return "http://graph.facebook.com/" + user_id + "/picture?type=normal"
 }

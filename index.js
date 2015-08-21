@@ -6,7 +6,7 @@ var phonetic = require('phonetic');
 
 var buffer = {};
 buffer.array = [];
-buffer.max = 20;
+buffer.max = 50;
 buffer.push = function(msg){
   buffer.array.push(msg);
   if(buffer.array.length > buffer.max){
@@ -17,7 +17,11 @@ buffer.push = function(msg){
 var active_users = {};
 
 var cust_id;
+// Lauren
 const BOTID = "f6d4afd83e34564d";
+// Chomsky
+// const BOTID = "b0dafd24ee35a477";
+
 
 
 function AddUser(user){
@@ -147,8 +151,7 @@ function RegisterUser(socket){
   var ip = socket.request.connection.remoteAddress;
   var sid = socket.id;
 
-  socket.emit('ip',ip);
-  socket.emit('random name', random_name);
+
 
   var this_user = {};
   this_user.socket_id = sid;
@@ -158,6 +161,9 @@ function RegisterUser(socket){
   this_user.name = random_name;
   active_users[sid] = this_user;
   UpdateUserList();
+
+  socket.emit('ip',ip);
+  socket.emit('random name', random_name);
 }
 
 function RegisterFacebookUser(socket, fid, fname){
@@ -196,12 +202,15 @@ function TooManyUsers(){
 function OnChatMessage(chat_message){
     io.emit('chat message', chat_message);
     buffer.push(chat_message);
+    // console.log(buffer);
 }
 
 function OnSplittableMessage(unsplit_chat_message){
-  var strings = unsplit_chat_message.msg.split(" ");
+  var strings = unsplit_chat_message.msg.split(/\s+/);
+  console.log("unsplit: " + unsplit_chat_message.msg);
   for(var index in strings){
     var string = strings[index];
+    console.log("STRING: " + string);
     var chat_message = JSON.parse(JSON.stringify(unsplit_chat_message));
     chat_message.msg = string;
     OnChatMessage(chat_message);
@@ -217,7 +226,7 @@ function IsDirectedAtBot(unsplit_chat_message){
 }
 
 function ParseChatbotXML(xml_string){
-  // console.log(xml_string);
+  console.log(xml_string);
   var parsed = {};
 
   if(xml_string){

@@ -89,8 +89,8 @@
     // For now, control use of the dev version or public version
     // by commenting out one of the two lines below
     //*********************************************
-    // SetFacebookInitCallback();
-    SetFacebookInitCallbackDev();
+    SetFacebookInitCallback();
+    // SetFacebookInitCallbackDev();
     // *********************************************
     LoadFacebookSDK();
   }
@@ -157,10 +157,12 @@ function FacebookLoggedInCallback() {
       }
 
       const EVERYONE_ID = 1;
-      const LAUREN_ID = 2;
+      const EVERYONE_AND_LAUREN_ID = 2;
+      // const JUST_LAUREN_ID = 3;
       function PopulateUserDropdown(user_list){
         AddUserToDropdown(EVERYONE_ID,"Everyone");
-        AddUserToDropdown(LAUREN_ID, "Everyone + Chatbot Lauren");
+        AddUserToDropdown(EVERYONE_AND_LAUREN_ID, "Everyone + Chatbot Lauren");
+        // AddUserToDropdown(JUST_LAUREN_ID, "Chatbot Lauren");
         for(var index in user_list){
           var user = user_list[index];
           var name = user.name
@@ -266,7 +268,7 @@ function FacebookLoggedInCallback() {
         this.author_facebook_id = GetFacebookID();
         this.author_id = GetMyID();
         this.timestamp = new Date().getTime();
-        this.directed_at_bot = $("#user_dropdown").val() == LAUREN_ID;
+        this.directed_at_bot = $("#user_dropdown").val() == EVERYONE_AND_LAUREN_ID;
       }
 
       
@@ -328,11 +330,11 @@ function FacebookLoggedInCallback() {
         var label_pic = LabelPicture(chat_message);
         var label = $("<div  class='well col-md-2 col-sm-2' name='label'>");
         var text = $("<p>").text(label_text);
-        var time = $("<p>").text(chat_message.timestamp);
-        var id = $("<p>").text(chat_message.author_id);
+        var time = $("<p>").text(new Date(chat_message.timestamp).toLocaleString());
+        // var id = $("<p>").text(chat_message.author_id);
         label.append(text);
         label.append(time);
-        label.append(id);
+        // label.append(id);
         label.append(label_pic);
         label.css('display','inline-block');
         label.css('margin-right',20);
