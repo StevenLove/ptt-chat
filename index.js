@@ -3,6 +3,7 @@ var http = require('http');
 var app_http = http.Server(app);
 var io = require('socket.io')(app_http);
 var phonetic = require('phonetic');
+var request = require('request');
 
 var buffer = {};
 buffer.array = [];
@@ -103,7 +104,7 @@ io.on('connection', function(socket){
   socket.on('splittable chat message', function(unsplit_chat_message){
     OnSplittableMessage(unsplit_chat_message);
     if(IsDirectedAtBot(unsplit_chat_message)){
-      EmitChatbotResponseToAll(unsplit_chat_message.msg);
+      EmitChatbotResponseToAll(unsplit_chat_message.original_text);
     }
   });
 
@@ -200,19 +201,213 @@ function TooManyUsers(){
 }
 
 function OnChatMessage(chat_message){
-    io.emit('chat message', chat_message);
-    buffer.push(chat_message);
-    // console.log(buffer);
+    // if(chat_message.one_word_at_a_time){
+    //   var original_words = chat_message.original_text.split(/\s+/);
+    //   var transformed_words = [];
+    //   for(var index in original_words){
+    //     var original_word = original_words[index];
+    //     var transformed_word = original_word.toUpperCase();
+    //     transformed_words.push(transformed_word);
+    //   }
+    //   chat_message.transformed_text = 
+    // }
+    // io.emit('chat message', chat_message);
+    // buffer.push(chat_message);
+    console.log(chat_message);
+    chat_message = JSON.parse(JSON.stringify(chat_message));
+
+    Transform(chat_message);
 }
 
+function PerformTransformation(tbuilder){
+
+  if(tbuilder.transform_index >= tbuilder.chat_message.transform_list.length){
+    var transformed_text = tbuilder.working_content.join(" ");
+    tbuilder.chat_message.transformed_text = transformed_text;
+    io.emit("chat message", tbuilder.chat_message);
+  }
+
+
+  var transform_name = tbuilder.chat_message.transform_list[tbuilder.transform_index];
+
+  var MakeCartonFullFunction = function(tbuilder){
+    var f = function(){
+      console.log("done!");
+      tbuilder.working_content = tbuilder.carton.items;
+      console.log("after spanish: " + tbuilder.working_content);
+      tbuilder.transform_index++;
+      PerformTransformation(tbuilder);
+    }
+    return f;
+  }
+
+  function MakeCartonCallback(carton_index, tbuilder){
+    var callback = function(err, response, body){
+      console.log(body);
+      PutInCarton(tbuilder.carton, body ,carton_index, MakeCartonFullFunction(tbuilder));
+    }
+    return callback;
+  }
+
+  if (transform_name == "Split"){
+    var placeholder = [];
+    for(var content_index in tbuilder.working_content){
+      var content = tbuilder.working_content[content_index];
+      var words = content.split(/\s+/);
+      for(word_index in words){
+        var word = words[word_index];
+        placeholder.push(word);
+      }
+    }
+    tbuilder.working_content = placeholder;
+    console.log("after split: " + tbuilder.working_content);
+    tbuilder.working_content = tbuilder.working_content;
+    tbuilder.transform_index++;
+    PerformTransformation(tbuilder);
+  }
+
+  if (transform_name == "Spanish"){
+    tbuilder.carton.counter = 0;
+    tbuilder.carton.max = tbuilder.working_content.length;
+    tbuilder.carton.items = [];
+    for(var carton_index in tbuilder.working_content){
+      var content = tbuilder.working_content[carton_index];
+      ToSpanish(
+        content,
+        MakeCartonCallback(carton_index, tbuilder)
+      )
+    }
+  }
+
+  if (transform_name == "Reverse"){
+    var placeholder = [];
+    for(var index in tbuilder.working_content){
+      var content = tbuilder.working_content[index];
+      var reversed = content.split('').reverse().join('');
+      placeholder.push(reversed);
+    }
+    console.log("after reverse: " + placeholder);
+    tbuilder.working_content = placeholder;
+    tbuilder.transform_index++;
+    PerformTransformation(tbuilder);
+  }
+
+
+}
+function Transform(chat_message){
+  var tbuilder = {};
+  tbuilder.chat_message = chat_message;
+  tbuilder.working_content = [chat_message.original_text];
+  tbuilder.carton = {};
+  tbuilder.carton.items = [];
+  tbuilder.transform_index = 0;
+
+  PerformTransformation(tbuilder);
+
+
+  // for(var i in chat_message.transform_list){
+  //   var transform_name = chat_message.transform_list[i];
+
+  //   if (transform_name == "Spanish"){
+  //     carton.counter = 0;
+  //     carton.max = working_content.length;
+  //     carton.items = [];
+  //     for(var content_index in working_content){
+  //       var content = working_content[content_index];
+  //       ToSpanish(
+  //         content,
+  //         MakeCartonCallback(content_index, carton, working_content)
+  //       )
+  //     }
+
+  //   }
+  //   if (transform_name == "Split"){
+  //     var placeholder = [];
+  //     for(var content_index in working_content){
+  //       var content = working_content[content_index];
+  //       var words = content.split(/\s+/);
+  //       for(word_index in words){
+  //         var word = words[word_index];
+  //         placeholder.push(word);
+  //       }
+  //     }
+  //     working_content = placeholder;
+  //     console.log("after split: " + working_content);
+
+  //   }
+  // }
+
+  // var transformed_text = working_content.join("");
+  // chat_message.transformed_text = transformed_text;
+  // io.emit("chat message", chat_message);
+}
+
+function PutInCarton(carton, item, index, carton_full_function){
+  carton.items[index] = item;
+  carton.counter++;
+  console.log("carton: " + carton.counter + " / " + carton.max + ": ");
+  console.log(carton.items);
+  if(carton.counter >= carton.max){
+    carton_full_function();
+  }
+}
+
+
+function ToSpanish(text, callback){
+
+  const api_url = 'http://localhost:8286'
+  // const args = "mode=translate&from=en&to=es&text="+text;
+  // const api_url = domain + "?" + args;
+  var GET_params = {
+    mode: "translate",
+    from: "en",
+    to: "es", 
+    text: text
+  };
+  var options = {
+    url: api_url,
+    qs: GET_params
+  }
+  request(
+    options, 
+    callback
+  );
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 function OnSplittableMessage(unsplit_chat_message){
-  var strings = unsplit_chat_message.msg.split(/\s+/);
-  console.log("unsplit: " + unsplit_chat_message.msg);
+  var strings = unsplit_chat_message.original_text.split(/\s+/);
+  console.log("unsplit: " + unsplit_chat_message.original_text);
   for(var index in strings){
     var string = strings[index];
     console.log("STRING: " + string);
     var chat_message = JSON.parse(JSON.stringify(unsplit_chat_message));
-    chat_message.msg = string;
+    chat_message.original_text = string;
     OnChatMessage(chat_message);
   }
 }

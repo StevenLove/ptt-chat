@@ -204,13 +204,13 @@ function FacebookLoggedInCallback() {
       }
 
       function ParseChatbotMessage(chat_message){
-        var xml_string = chat_message.msg;
+        var xml_string = chat_message.original_text;
         var xml_doc = $.parseXML(xml_string);
         $xml = $(xml_doc);
         $bot_response = $xml.find("that");
         var bot_response = $bot_response.text();
         console.log(bot_response);
-        chat_message.msg = bot_response;
+        chat_message.original_text = bot_response;
         return chat_message;
       }
 
@@ -244,7 +244,8 @@ function FacebookLoggedInCallback() {
         //   var word = words[index];
         //   SendMsg(word);
         // }
-        SendSplittableMsg(input);
+        // SendSplittableMsg(input);
+        document.socket.emit('chat message', new ChatMessage(input));
         return false;
       }
       function GetInput(){
@@ -283,12 +284,18 @@ function FacebookLoggedInCallback() {
 
 
       function ChatMessage(message){
-        this.msg = message;
-        this.author_name = GetMyName();
-        this.author_facebook_id = GetFacebookID();
+        var directed_at_bot = $("#user_dropdown").val() == EVERYONE_AND_LAUREN_ID;
+
         this.author_id = GetMyID();
+        this.author_facebook_id = GetFacebookID();
+        this.author_name = GetMyName();
         this.timestamp = new Date().getTime();
-        this.directed_at_bot = $("#user_dropdown").val() == EVERYONE_AND_LAUREN_ID;
+        this.target = (directed_at_bot)? "Everyone" : "Humans";
+        this.original_text = message;
+        //transformed_text
+        //image_url_list
+        this.transform_list = ["Spanish", "Reverse", "Split", "Reverse"];
+        this.one_word_at_a_time = true;
       }
 
       
@@ -464,24 +471,27 @@ function FacebookLoggedInCallback() {
 
 
         var img_container = $("<div>");
+        container.find("[name='chatline_images']").append(img_container);
+
 
 
         var cb = function(data){
           // console.log(data);
-          // img_container.prepend(data);
-          GoogleSearch(img_container,data);
+          img_container.append(data);
+          img_container.append("&nbsp;");
+          // GoogleSearch(img_container,data);
         }
-        TurnSpanish(chat_message.msg,cb);
-
+        console.log(chat_message.transformed_text);
+        // TurnSpanish(chat_message.original_text,cb);
+        cb(chat_message.transformed_text);
 
         img_container.css('display','inline-block');
         // img_container.css('height',150);
         // img_container.css('width',150);
-        img_container.hide();
+        // img_container.hide();
 
-        container.find("[name='chatline_images']").append(img_container);
 
-        // GoogleSearch(img_container,chat_message.msg);
+        // GoogleSearch(img_container,chat_message.original_text);
       }
 
 
