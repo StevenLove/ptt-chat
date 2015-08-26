@@ -293,8 +293,8 @@ function FacebookLoggedInCallback() {
         this.target = (directed_at_bot)? "Everyone" : "Humans";
         this.original_text = message;
         //transformed_text
-        //image_url_list
-        this.transform_list = ["Spanish", "Reverse", "Split", "Reverse"];
+        //image_url_lists
+        this.transform_list = ["Spanish", "Reverse", "Split", "Reverse", "Picture"];
         this.one_word_at_a_time = true;
       }
 
@@ -470,28 +470,39 @@ function FacebookLoggedInCallback() {
         document.prev_chat_message = chat_message;
 
 
-        var img_container = $("<div>");
-        container.find("[name='chatline_images']").append(img_container);
+        
 
 
 
         var cb = function(data){
           // console.log(data);
+           var img_container = $("<div>");
+            container.find("[name='chatline_images']").append(img_container);
+            img_container.css('display','inline-block');
           img_container.append(data);
           img_container.append("&nbsp;");
           // GoogleSearch(img_container,data);
         }
         console.log(chat_message.transformed_text);
         // TurnSpanish(chat_message.original_text,cb);
-        cb(chat_message.transformed_text);
-
-        img_container.css('display','inline-block');
-        // img_container.css('height',150);
-        // img_container.css('width',150);
-        // img_container.hide();
 
 
-        // GoogleSearch(img_container,chat_message.original_text);
+        if(chat_message.image_url_lists.length > 0){
+          for(var i in chat_message.image_url_lists){
+            var img_container = $("<div>");
+            container.find("[name='chatline_images']").append(img_container);
+            img_container.css('display','inline-block');
+            var img_url_list = chat_message.image_url_lists[i];
+            for(var j in img_url_list){
+              var img_url = img_url_list[j];
+              img_container.append(ResultImage(img_url));
+            }
+            CycleThroughImages(img_container);
+          }
+        }
+        else{
+          cb(chat_message.transformed_text);
+        }
       }
 
 
@@ -515,7 +526,7 @@ function FacebookLoggedInCallback() {
         });
         
         // img.css('display','inline-block');
-        img.hide();
+        // img.hide();
         img.css('width',150);
         img.css('height',150);
         img.attr('src', url);

@@ -292,8 +292,41 @@ function PerformTransformation(tbuilder){
     PerformTransformation(tbuilder);
   }
 
-
+  if (transform_name == "Picture"){
+    tbuilder.carton.counter = 0;
+    tbuilder.carton.max = tbuilder.working_content.length;
+    tbuilder.carton.items=[];
+    for(var carton_index in tbuilder.working_content){
+      var content = tbuilder.working_content[carton_index];
+      ToImageURLs(content, MakePictureCallback(carton_index, tbuilder));
+    }
+  }
 }
+
+function MakePictureCallback(carton_index, tbuilder){
+  callback = function(err, response, body){
+    body = JSON.parse(body);
+    // tbuilder.transform_index ++;
+    // PerformTransformation(tbuilder);
+    // console.log("after picture: " + body);
+
+    PutInCarton(tbuilder.carton, body ,carton_index, MakePictureDoneFunction(tbuilder));
+  }
+  return callback;
+}
+
+var MakePictureDoneFunction = function(tbuilder){
+    var f = function(){
+      console.log("done!");
+      tbuilder.working_content = tbuilder.carton.items;
+      tbuilder.chat_message.image_url_lists = tbuilder.working_content;
+      console.log("after picture: " + tbuilder.working_content);
+      tbuilder.transform_index++;
+      PerformTransformation(tbuilder);
+    }
+    return f;
+  }
+
 function Transform(chat_message){
   var tbuilder = {};
   tbuilder.chat_message = chat_message;
@@ -303,43 +336,6 @@ function Transform(chat_message){
   tbuilder.transform_index = 0;
 
   PerformTransformation(tbuilder);
-
-
-  // for(var i in chat_message.transform_list){
-  //   var transform_name = chat_message.transform_list[i];
-
-  //   if (transform_name == "Spanish"){
-  //     carton.counter = 0;
-  //     carton.max = working_content.length;
-  //     carton.items = [];
-  //     for(var content_index in working_content){
-  //       var content = working_content[content_index];
-  //       ToSpanish(
-  //         content,
-  //         MakeCartonCallback(content_index, carton, working_content)
-  //       )
-  //     }
-
-  //   }
-  //   if (transform_name == "Split"){
-  //     var placeholder = [];
-  //     for(var content_index in working_content){
-  //       var content = working_content[content_index];
-  //       var words = content.split(/\s+/);
-  //       for(word_index in words){
-  //         var word = words[word_index];
-  //         placeholder.push(word);
-  //       }
-  //     }
-  //     working_content = placeholder;
-  //     console.log("after split: " + working_content);
-
-  //   }
-  // }
-
-  // var transformed_text = working_content.join("");
-  // chat_message.transformed_text = transformed_text;
-  // io.emit("chat message", chat_message);
 }
 
 function PutInCarton(carton, item, index, carton_full_function){
@@ -352,6 +348,23 @@ function PutInCarton(carton, item, index, carton_full_function){
   }
 }
 
+function ToImageURLs(text, callback){
+  const api_url = 'http://localhost:8286'
+  // const args = "mode=translate&from=en&to=es&text="+text;
+  // const api_url = domain + "?" + args;
+  var GET_params = {
+    mode: "image",
+    search: text
+  };
+  var options = {
+    url: api_url,
+    qs: GET_params
+  }
+  request(
+    options, 
+    callback
+  );
+}
 
 function ToSpanish(text, callback){
 

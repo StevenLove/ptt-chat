@@ -43,7 +43,7 @@ app.get('/*', function(req,res){
   }
 
 
-  if(mode == "image"){
+  else if(mode == "image"){
     var urls = [];
     var searches_completed = 0;
 
