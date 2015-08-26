@@ -225,6 +225,7 @@ function PerformTransformation(tbuilder){
     var transformed_text = tbuilder.working_content.join(" ");
     tbuilder.chat_message.transformed_text = transformed_text;
     io.emit("chat message", tbuilder.chat_message);
+    buffer.push(tbuilder.chat_message);
   }
 
 
