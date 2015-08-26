@@ -464,6 +464,16 @@ function FacebookLoggedInCallback() {
 
 
         var img_container = $("<div>");
+
+
+        var cb = function(data){
+          // console.log(data);
+          // img_container.prepend(data);
+          GoogleSearch(img_container,data);
+        }
+        TurnSpanish(chat_message.msg,cb);
+
+
         img_container.css('display','inline-block');
         // img_container.css('height',150);
         // img_container.css('width',150);
@@ -471,7 +481,16 @@ function FacebookLoggedInCallback() {
 
         container.find("[name='chatline_images']").append(img_container);
 
-        GoogleSearch(img_container,chat_message.msg);
+        // GoogleSearch(img_container,chat_message.msg);
+      }
+
+
+      function TurnSpanish(text, callback){
+        $.ajax({
+            type: "GET",
+            url: "http://localhost:8286/?mode=translate&from=en&to=es&text=" + text,
+            success: callback
+        });
       }
 
 

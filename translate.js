@@ -9,13 +9,16 @@ var most_recent_access_token;
 
 
 app.get('/*', function(req,res){
+  res.header('Access-Control-Allow-Origin', "*");
+
   var GET_params = {
     mode:req.query.mode,
     from:req.query.from,
     to:req.query.to,
     text:req.query.text
   }
-  
+  console.log(req.url);
+
   if(GET_params.mode == "translate"){
     var success_callback = function(translated_string){
       translated_string = RemoveQuotesAroundString(translated_string);
