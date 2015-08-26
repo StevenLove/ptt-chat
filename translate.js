@@ -2,6 +2,8 @@ var app = require('express')();
 var http = require('http');
 var querystring = require('querystring');
 var request = require('request');
+var googleimages = require('google-images');
+
 
 var most_recent_access_token_date;
 var most_recent_access_token;
@@ -11,15 +13,18 @@ var most_recent_access_token;
 app.get('/*', function(req,res){
   res.header('Access-Control-Allow-Origin', "*");
 
-  var GET_params = {
-    mode:req.query.mode,
-    from:req.query.from,
-    to:req.query.to,
-    text:req.query.text
-  }
+
+  var mode = req.query.mode;
+  
   console.log(req.url);
 
-  if(GET_params.mode == "translate"){
+  if(mode == "translate"){
+    var GET_params = {
+      mode:req.query.mode,
+      from:req.query.from,
+      to:req.query.to,
+      text:req.query.text
+    }
     var success_callback = function(translated_string){
       translated_string = RemoveQuotesAroundString(translated_string);
 
@@ -29,16 +34,59 @@ app.get('/*', function(req,res){
       res.end(translated_string);
     }
 
+
+
     if(!IsAccessTokenUpToDate()){
       RetrieveNewAccessToken();
     }
     TranslateOnceTokenIsUpToDate(GET_params.text,GET_params.from,GET_params.to, success_callback);
+  }
+
+
+  if(mode == "image"){
+    var urls = [];
+    var searches_completed = 0;
+
+    var search_term = req.query.search;
+    googleimages.search({
+      for: search_term, 
+        page:0, 
+        callback: function (err, images) {
+          for( var i in images){
+            var image = images[i];
+            urls.push(image.url);
+          }
+          searches_completed++;
+          if(searches_completed >= 2){
+            res.write(JSON.stringify(urls));
+            res.end("");
+          }
+        }
+      }
+    );
+    googleimages.search({
+      for: search_term, 
+        page:4, 
+        callback: function (err, images) {
+          for( var i in images){
+            var image = images[i];
+            urls.push(image.url);
+          }
+          searches_completed++;
+          if(searches_completed >= 2){
+            res.write(JSON.stringify(urls));
+            res.end("");
+          }
+        }
+      }
+    );
   }
   else{
     res.end("not doing anything.");
   }
 
 });
+
 
 
 app.listen(8286,function(){
