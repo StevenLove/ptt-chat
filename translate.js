@@ -3,6 +3,8 @@ var http = require('http');
 var querystring = require('querystring');
 var request = require('request');
 var googleimages = require('google-images');
+var WordNet = require('node-wordnet');
+
 
 
 var most_recent_access_token_date;
@@ -81,7 +83,31 @@ app.get('/*', function(req,res){
       }
     );
   }
+  else if(mode == "synonym"){
+    var word = req.query.word;
+    var wordnet = new WordNet();
+
+    var syn_set = {};
+
+    wordnet.lookup(word, function(results) {
+        results.forEach(
+          function(result) {
+            result.synonyms.forEach(function(result){
+              result = result.toLowerCase();
+              syn_set[result] = "true";
+            });
+          }
+        );
+        delete syn_set[word];
+        var synonyms = Object.keys(syn_set);
+        res.write(JSON.stringify(synonyms));
+        // console.log(syn_set);
+        res.end("");
+        wordnet.close();
+    });
+  }
   else{
+    console.log("not doing anything");
     res.end("not doing anything.");
   }
 
