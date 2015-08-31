@@ -90,8 +90,16 @@
 
 
     <script src="https://www.google.com/jsapi" type="text/javascript"></script>
+    
     <script src ="https://cdn.socket.io/socket.io-1.2.0.js"></script>
     <script src ="http://code.jquery.com/jquery-1.11.1.js"></script>
+
+    <!--
+    <script src = "http://localhost:8287/socket.io.js" type="text/javascript"></script>
+   
+    <script type="text/javascript" src = "http://localhost:8287/jquery.js"></script>
+    -->
+
     <script src = "/socket.io/socket.io.js"></script>
     <!-- Latest compiled and minified CSS -->
 <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
@@ -294,7 +302,7 @@ function FacebookLoggedInCallback() {
         this.original_text = message;
         //transformed_text
         //image_url_lists
-        this.transform_list = ["Spanish", "Reverse", "Split", "Reverse", "Picture"];
+        this.transform_list = ["Split","Synonym"];
         this.one_word_at_a_time = true;
       }
 
@@ -487,7 +495,7 @@ function FacebookLoggedInCallback() {
         // TurnSpanish(chat_message.original_text,cb);
 
 
-        if(chat_message.image_url_lists.length > 0){
+        if(chat_message.image_url_lists && chat_message.image_url_lists.length > 0){
           for(var i in chat_message.image_url_lists){
             var img_container = $("<div>");
             container.find("[name='chatline_images']").append(img_container);

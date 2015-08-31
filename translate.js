@@ -90,6 +90,7 @@ app.get('/*', function(req,res){
     var syn_set = {};
 
     wordnet.lookup(word, function(results) {
+        console.log(results);
         results.forEach(
           function(result) {
             result.synonyms.forEach(function(result){
@@ -100,8 +101,9 @@ app.get('/*', function(req,res){
         );
         delete syn_set[word];
         var synonyms = Object.keys(syn_set);
+        synonyms.shift(word);
         res.write(JSON.stringify(synonyms));
-        // console.log(syn_set);
+        console.log(syn_set);
         res.end("");
         wordnet.close();
     });

@@ -302,6 +302,16 @@ function PerformTransformation(tbuilder){
       ToImageURLs(content, MakePictureCallback(carton_index, tbuilder));
     }
   }
+
+  if (transform_name == "Synonym"){
+    tbuilder.carton.counter = 0;
+    tbuilder.carton.max = tbuilder.working_content.length;
+    tbuilder.carton.items = [];
+    for(var carton_index in tbuilder.working_content){
+      var content = tbuilder.working_content[carton_index];
+      ToSynonym(content, MakeSynonymCallback(carton_index, tbuilder));
+    }
+  }
 }
 
 function MakePictureCallback(carton_index, tbuilder){
@@ -316,7 +326,7 @@ function MakePictureCallback(carton_index, tbuilder){
   return callback;
 }
 
-var MakePictureDoneFunction = function(tbuilder){
+function MakePictureDoneFunction(tbuilder){
     var f = function(){
       console.log("done!");
       tbuilder.working_content = tbuilder.carton.items;
@@ -326,7 +336,43 @@ var MakePictureDoneFunction = function(tbuilder){
       PerformTransformation(tbuilder);
     }
     return f;
+}
+
+
+
+function MakeSynonymCallback(carton_index, tbuilder){
+  callback = function(err, response, body){
+    body = JSON.parse(body);
+    var synonym;
+    if(body.length > 1){
+      synonym = body[0];
+    }
+    else{
+      synonym = body[0]
+    }
+    // var synonym = JSON.parse(body)[0];
+    PutInCarton(tbuilder.carton, synonym ,carton_index, MakeSynonymDoneFunction(tbuilder));
   }
+  return callback;
+}
+
+function MakeSynonymDoneFunction(tbuilder){
+    var f = function(){
+      console.log("done!");
+      tbuilder.working_content = tbuilder.carton.items;
+      console.log("after synonym: " + tbuilder.working_content);
+      tbuilder.transform_index++;
+      PerformTransformation(tbuilder);
+    }
+    return f;
+}
+
+
+
+
+
+
+
 
 function Transform(chat_message){
   var tbuilder = {};
@@ -347,6 +393,23 @@ function PutInCarton(carton, item, index, carton_full_function){
   if(carton.counter >= carton.max){
     carton_full_function();
   }
+}
+function ToSynonym(text, callback){
+   const api_url = 'http://localhost:8286'
+  // const args = "mode=translate&from=en&to=es&text="+text;
+  // const api_url = domain + "?" + args;
+  var GET_params = {
+    mode: "synonym",
+    word: text
+  };
+  var options = {
+    url: api_url,
+    qs: GET_params
+  }
+  request(
+    options, 
+    callback
+  );
 }
 
 function ToImageURLs(text, callback){
@@ -387,11 +450,6 @@ function ToSpanish(text, callback){
     callback
   );
 }
-
-
-
-
-
 
 
 
