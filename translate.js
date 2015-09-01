@@ -101,7 +101,19 @@ app.get('/*', function(req,res){
     });
   }
   else if(mode == "pos"){
-
+    GetPartsOfSpeech(req.query.sentence,function(result){
+      var sentence = ParsePartOfSpeechTaggedText(result);
+      res.write(JSON.stringify(sentence));
+      res.end("");
+    });
+  }
+  else if(mode == "smartsynonym"){
+    GetPartsOfSpeech(req.query.sentence,function(result){
+      var sentence = ParsePartOfSpeechTaggedText(result);
+      GetSynonymLists(sentence, function(synonym_lists){
+        res.end(JSON.stringify(synonym_lists));
+      })
+    });
   }
   else{
     console.log("not doing anything");
@@ -109,6 +121,38 @@ app.get('/*', function(req,res){
   }
 
 });
+
+function GetSamePosSynonyms(bighugeresult, lay_part){
+  var word = bighugeresult[lay_part];
+  var result;
+  if(word){
+    result = word["syn"];
+  }
+  else{
+    result = [];
+  }
+  return result;
+}
+
+function GetSynonymLists(sentence, callback){
+  var synonym_lists = [];
+  var counter = sentence.words.length;
+  sentence.words.forEach(function(word, index){
+    var lay_part = sentence.lay_parts[index];
+    GetBigHugeSynonymList(word, function(bighugeresult){
+      // console.log(bighugeresult);
+      var syn_list = GetSamePosSynonyms(bighugeresult, lay_part);
+      syn_list.unshift(word);
+      // console.log(syn_list);
+      synonym_lists[index]=syn_list;
+      // synonym_lists[index] = GetSamePosSynonyms(bighugeresult, lay_part);
+      --counter;
+      if(counter == 0){
+        callback(synonym_lists);
+      }
+    })
+  });
+}
 
 
 
@@ -125,6 +169,73 @@ function GetRandomElement(array){
     var index = Math.floor(Math.random()*max);
     return array[index];
   }
+}
+function GetPartsOfSpeech(sentence, callback){
+  const api_url = "http://text-processing.com/api/tag/";
+  const params = querystring.stringify({
+    'text': sentence,
+    'output': "tagged"
+  });
+  const options = {
+    url: api_url,
+    body: params
+  }
+  const api_callback = function(error, response, body){
+    if(error) {
+      console.log(error);
+      return;
+    }
+    var parts_of_speech = JSON.parse(body)["text"];
+    callback(parts_of_speech);
+  }
+  request.post(options,api_callback);
+
+}
+
+function ParsePartOfSpeechTaggedText(text){
+// "This/DT is/VBZ a/DT sample/NN input/NN ./.. There/EX might/MD be/VB two/CD sentences/NNS ./.. And/CC even/RB a/DT misspellign/NN ?/."
+  var sentence = {};
+  var words = [];
+  var penn_parts = [];
+  var lay_parts = [];
+  var word;
+  var pos_abbreviation;
+  var tokens = text.split(" ");
+  tokens.forEach(function(token){
+    sidesOfSlash = token.split("/");
+    word = sidesOfSlash[0];
+    pos_abbreviation = sidesOfSlash[1];
+    words.push(word);
+    penn_parts.push(pos_abbreviation);
+    lay_parts.push(ToLayPartOfSpeech(pos_abbreviation));
+  });
+
+  sentence["words"] = words;
+  sentence["penn_parts"] = penn_parts;
+  sentence["lay_parts"] = lay_parts;
+  return sentence;
+}
+
+function ToLayPartOfSpeech(penn_pos){
+  var result;
+  var first_two = penn_pos.slice(0,2);
+
+  if(first_two ==="VB"){
+    result = "verb";
+  }
+  else if( first_two ==="NN"){
+    result = "noun";
+  }
+  else if(first_two == "RB" || penn_pos === "WRB"){
+    result = "adverb";
+  }
+  else if(first_two == "JJ"){
+    result = "adjective";
+  }
+  else{
+    result = "other";
+  }
+  return result;
 }
 
 function GetBigHugeSynonymList(word, success_callback){
