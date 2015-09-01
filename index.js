@@ -343,13 +343,7 @@ function MakePictureDoneFunction(tbuilder){
 function MakeSynonymCallback(carton_index, tbuilder){
   callback = function(err, response, body){
     body = JSON.parse(body);
-    var synonym;
-    if(body.length > 1){
-      synonym = body[0];
-    }
-    else{
-      synonym = body[0]
-    }
+    var synonym = body;
     // var synonym = JSON.parse(body)[0];
     PutInCarton(tbuilder.carton, synonym ,carton_index, MakeSynonymDoneFunction(tbuilder));
   }

@@ -28,8 +28,8 @@ app.get('/*', function(req,res){
       text:req.query.text
     }
     var success_callback = function(translated_string){
-      translated_string = RemoveQuotesAroundString(translated_string);
-
+      // translated_string = RemoveQuotesAroundString(translated_string);
+      translated_string = JSON.parse(translated_string);
 
       console.log("("+GET_params.from+") " + GET_params.text + " -> " + translated_string + " (" + GET_params.to + ")");
 
@@ -84,29 +84,24 @@ app.get('/*', function(req,res){
     );
   }
   else if(mode == "synonym"){
-    var word = req.query.word;
-    var wordnet = new WordNet();
-
-    var syn_set = {};
-
-    wordnet.lookup(word, function(results) {
-        console.log(results);
-        results.forEach(
-          function(result) {
-            result.synonyms.forEach(function(result){
-              result = result.toLowerCase();
-              syn_set[result] = "true";
+    GetBigHugeSynonymList(req.query.word,
+      function(bighugeresult){
+        if(bighugeresult){
+          synonyms = [];
+          synonyms.unshift(req.query.word);
+          Object.keys(bighugeresult).forEach(function(part_of_speech){
+            bighugeresult[part_of_speech]["syn"].forEach(function(one_synonym){
+              synonyms.push(one_synonym);
             });
-          }
-        );
-        delete syn_set[word];
-        var synonyms = Object.keys(syn_set);
-        synonyms.shift(word);
-        res.write(JSON.stringify(synonyms));
-        console.log(syn_set);
-        res.end("");
-        wordnet.close();
+          });
+          var result = GetRandomElement(synonyms);
+          res.write(JSON.stringify(result));
+        }
+      res.end("");
     });
+  }
+  else if(mode == "pos"){
+
   }
   else{
     console.log("not doing anything");
@@ -121,12 +116,83 @@ app.listen(8286,function(){
   console.log('listening on *:8286');
 });
 
-function RemoveQuotesAroundString(string){
-  if(string && string.length >=2){
-    string = string.trim().slice(1,-1);
+function GetRandomElement(array){
+  var max = array.length;
+  if(max<1){
+    return [];
   }
-  return string;
+  else{
+    var index = Math.floor(Math.random()*max);
+    return array[index];
+  }
 }
+
+function GetBigHugeSynonymList(word, success_callback){
+  const api_url_base ="http://words.bighugelabs.com/api/2/";
+  const api_key = ***REMOVED***;
+  const format = "json";
+  var api_url = api_url_base+api_key+"/"+word+"/"+format;
+
+
+  var options = {
+    url: api_url,
+  }
+
+  var api_callback = function(err, response, body) {
+    if(err) {
+      console.log(err);
+      return;
+    }
+    console.log("Synonym Get response: " + response.statusCode);
+    if(!body){
+      var empty_array = [];
+      success_callback(empty_array);
+    }
+    else{
+      success_callback(JSON.parse(body));
+    }
+  }
+
+  request(
+    options, api_callback
+  );
+}
+
+function GetWordnetSynonymList(word, callback){
+    var wordnet = new WordNet();
+
+    var syn_set = {};
+
+    wordnet.lookup(word, function(results) {
+        console.log(results[0]);
+        results.forEach(
+          function(result) {
+            // console.log(result.lemma.count);
+            result.synonyms.forEach(function(a_synonym){
+              a_synonym = a_synonym.toLowerCase();
+              syn_set[a_synonym] = "true";
+            });
+          }
+        );
+        delete syn_set[word];
+        var synonyms = Object.keys(syn_set);
+        console.log("word: " + word);
+        synonyms.unshift(word);
+        // res.write(JSON.stringify(synonyms));
+        console.log(synonyms);
+        // res.end("");
+        wordnet.close();
+        callback(synonyms);
+    });
+    // return synonyms;
+}
+
+// function RemoveQuotesAroundString(string){
+//   if(string && string.length >=2){
+//     string = string.trim().slice(1,-1);
+//   }
+//   return string;
+// }
 
 function TranslateOnceTokenIsUpToDate(text,from,to,callback){
   InvokeFunctionAWhenFunctionBIsTrue(
