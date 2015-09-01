@@ -484,7 +484,7 @@ function ToImageURLs(text, callback){
   // const args = "mode=translate&from=en&to=es&text="+text;
   // const api_url = domain + "?" + args;
   var GET_params = {
-    mode: "google_image",
+    mode: "bing_image",
     search: text
   };
   var options = {
