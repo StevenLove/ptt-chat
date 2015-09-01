@@ -312,6 +312,44 @@ function PerformTransformation(tbuilder){
       ToSynonym(content, MakeSynonymCallback(carton_index, tbuilder));
     }
   }
+
+  if (transform_name == "SmartSynonym"){
+    tbuilder.carton.counter = 0;
+    tbuilder.carton.max = tbuilder.working_content.length;
+    tbuilder.carton.items = [];
+    for(var carton_index in tbuilder.working_content){
+      var content = tbuilder.working_content[carton_index];
+      ToSmartSynonym(content, MakeSmartSynonymCallback(carton_index, tbuilder));
+    }
+  }
+}
+
+function MakeSmartSynonymCallback(carton_index, tbuilder){
+  callback = function(err, response, body){
+    body = JSON.parse(body);
+    var result = "";
+    body.forEach(function(synonym_list){
+      if(synonym_list.length>1){
+        result+=(GetRandomElement(synonym_list.slice(1)) + " ");
+      }
+      else{
+        result+=(synonym_list[0] + " ")
+      }
+    });
+    PutInCarton(tbuilder.carton,result,carton_index,MakeSmartSynonymDoneCallback(tbuilder));
+  }
+  return callback;
+}
+function MakeSmartSynonymDoneCallback(tbuilder){
+  var f = function(){
+     console.log("done!");
+      tbuilder.working_content = tbuilder.carton.items;
+      // tbuilder.chat_message.image_url_lists = tbuilder.working_content;
+      console.log("after smart synonyms: " + tbuilder.working_content);
+      tbuilder.transform_index++;
+      PerformTransformation(tbuilder);
+  }
+  return f;
 }
 
 function MakePictureCallback(carton_index, tbuilder){
@@ -342,9 +380,14 @@ function MakePictureDoneFunction(tbuilder){
 
 function MakeSynonymCallback(carton_index, tbuilder){
   callback = function(err, response, body){
-    body = JSON.parse(body);
-    var synonym = body;
-    // var synonym = JSON.parse(body)[0];
+    var synonym_list = JSON.parse(body);
+    var synonym;
+    if(synonym_list.length > 1){
+      synonym = GetRandomElement(synonym_list.slice(1));
+    }
+    else{
+      synonym = synonym_list[0];
+    }
     PutInCarton(tbuilder.carton, synonym ,carton_index, MakeSynonymDoneFunction(tbuilder));
   }
   return callback;
@@ -363,6 +406,16 @@ function MakeSynonymDoneFunction(tbuilder){
 
 
 
+function GetRandomElement(array){
+  var max = array.length;
+  if(max<1){
+    return [];
+  }
+  else{
+    var index = Math.floor(Math.random()*max);
+    return array[index];
+  }
+}
 
 
 
@@ -390,11 +443,25 @@ function PutInCarton(carton, item, index, carton_full_function){
 }
 function ToSynonym(text, callback){
    const api_url = 'http://localhost:8286'
-  // const args = "mode=translate&from=en&to=es&text="+text;
-  // const api_url = domain + "?" + args;
   var GET_params = {
     mode: "synonym",
     word: text
+  };
+  var options = {
+    url: api_url,
+    qs: GET_params
+  }
+  request(
+    options, 
+    callback
+  );
+}
+
+function ToSmartSynonym(text, callback){
+   const api_url = 'http://localhost:8286'
+  var GET_params = {
+    mode: "smartsynonym",
+    sentence: text
   };
   var options = {
     url: api_url,

@@ -50,7 +50,7 @@
       <div id="accessories" style="float:right;">
         
 
-        <fb:login-button scope="public_profile,email" size="xlarge" onlogin="checkLoginState();">
+        <fb:login-button scope="public_profile,email" size="xlarge" onlogin="checkLoginState();" style="float:left;">
         </fb:login-button>
 
         <span id="status">
@@ -60,6 +60,18 @@
           <label for="user_dropdown">Send To</label>
           <select class="form-control" id="user_dropdown"></select>
         </div>
+
+        <div class="input-group input-group-lg" style="float:right;">
+          <label for="transform_dropdown">Choose a Transform</label>
+          <select class="form-control" id="transform_dropdown"></select>
+        </div>
+
+        <span class="input-group-btn" style="float:left;">
+          <button id="transform_button" class="btn btn-info btn-lg" type="button">
+            <span class="glyphicon glyphicon-star" aria-hidden="true"></span> Transform
+          </button>
+        </span>
+
       </div>
       <div class="col-lg-12 col-xs-12">
       <div class="input-group ">
@@ -70,7 +82,8 @@
         </span>
         <input id="m" type="text" class="form-control input-lg" autocomplete="off" placeholder="Your Message Here...">
       </div>
-    </div>
+
+
     </div>
 
 
@@ -184,6 +197,30 @@ function FacebookLoggedInCallback() {
         });
       }
 
+
+      function PopulateTransformDropdown(){
+        var options = ["Synonym","SmartSynonym","Split","Spanish","Reverse","Picture"];
+        options.forEach(function(option){
+          $("#transform_dropdown").append("<option value = " + option +">" + option + "</option>");
+        });
+      }
+
+      function EnableTransformButton(){
+        $("#transform_button").click(function(){
+          var transform = $("#transform_dropdown").val();
+          document.transforms.push(transform);
+        });
+      }
+
+      function SetupTransforms(){
+        document.transforms = [];
+        EnableTransformButton();
+        PopulateTransformDropdown();
+      }
+
+
+
+
       const EVERYONE_ID = 1;
       const EVERYONE_AND_LAUREN_ID = 2;
       // const JUST_LAUREN_ID = 3;
@@ -231,6 +268,7 @@ function FacebookLoggedInCallback() {
         EnableScrollDownOnResize();
         RequestRecentChatMessages();
         EnableSendButton();
+        SetupTransforms();
       });
   
       function EnableSendButton(){
@@ -302,7 +340,7 @@ function FacebookLoggedInCallback() {
         this.original_text = message;
         //transformed_text
         //image_url_lists
-        this.transform_list = ["Split","Synonym"];
+        this.transform_list = document.transforms;
         this.one_word_at_a_time = true;
       }
 
