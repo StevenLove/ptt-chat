@@ -336,6 +336,7 @@ function MakeSmartSynonymCallback(carton_index, tbuilder){
         result+=(synonym_list[0] + " ")
       }
     });
+    result = result.trim();
     PutInCarton(tbuilder.carton,result,carton_index,MakeSmartSynonymDoneCallback(tbuilder));
   }
   return callback;
@@ -354,7 +355,12 @@ function MakeSmartSynonymDoneCallback(tbuilder){
 
 function MakePictureCallback(carton_index, tbuilder){
   callback = function(err, response, body){
-    body = JSON.parse(body);
+    if(err){
+      console.log(err);
+    }
+    else{
+      body = JSON.parse(body);
+    }
     // tbuilder.transform_index ++;
     // PerformTransformation(tbuilder);
     // console.log("after picture: " + body);
@@ -478,7 +484,7 @@ function ToImageURLs(text, callback){
   // const args = "mode=translate&from=en&to=es&text="+text;
   // const api_url = domain + "?" + args;
   var GET_params = {
-    mode: "image",
+    mode: "google_image",
     search: text
   };
   var options = {
