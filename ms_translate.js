@@ -20,9 +20,9 @@ var ms_translate = function(client_secret){
   */
   self.Translate = function(from, to, text, translated_text_callback){
     // Check for reasons to not even attempt translation
-    if(NotWorthTranslating(text)){
-      console.log("\"" + text + "\" not worth translating");
-      translated_text_callback(text);
+    if(NotWorthTranslating(from, to, text)){
+      console.log("\"" + text + "\" not worth translating from " + from + " to " + to);
+      translated_text_callback(null, text);
       return;
     }
     if(!from || !to){
@@ -35,6 +35,10 @@ var ms_translate = function(client_secret){
           translated_text_callback(token_error);
           return;
         }
+        // ConsumeParaphraseAPI(
+        //   text,
+        //   token
+        // );
         ConsumeTranslationAPI(
           text,
           from,
@@ -50,7 +54,43 @@ var ms_translate = function(client_secret){
     );
   }
 
-  var NotWorthTranslating = function(text){
+  var ConsumeParaphraseAPI = function(text, access_token, api_response_callback){
+    const api_url = 'http://api.microsofttranslator.com/v3/json/paraphrase';
+    const auth_prefix = "Bearer ";
+    var GET_params = {
+      appId: access_token.body,
+      language: "en", 
+      sentence: text
+    };
+    var options = {
+      url: api_url,
+      qs: GET_params,
+      headers:{
+        'Authorization': auth_prefix+access_token.body
+      }
+    }
+    request(
+      options,
+      function(err, response, body){
+        console.log(err);
+        console.log(response.statusCode);
+        console.log(body);
+        // var return_text;
+        // if(HasErrors(err,response,body)){
+        //   ReportErrors("Translation of " + text,err,response,body);
+        //   api_response_callback({"error":"error from translate api"});
+        // }
+        // else{
+          // Since the API doesn't return JSON, I can't tell if it liked the call or not.  This means that we will think that the translated text is something like "ArgumentOutOfRangeException: 'to' must be a valid language..."  I don't expect us to validate every parameter here, though.
+          // return_text = body;
+          // api_response_callback(null, return_text);
+        // }
+        return;
+      }
+    );
+  }
+
+  var NotWorthTranslating = function(from, to, text){
     if(!text){ //undefined or ""
       return true;
     }
@@ -58,6 +98,10 @@ var ms_translate = function(client_secret){
     if(!stripped_text){
       return true;
     }
+    if(from === to){
+      return true;
+    }
+    return false;
   }
 
   var ConsumeTranslationAPI = function(text,from,to,access_token,api_response_callback){

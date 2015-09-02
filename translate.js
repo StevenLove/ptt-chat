@@ -37,6 +37,60 @@ app.get('/*', function(req,res){
       }
     );
   }
+  else if( mode == "paraphrase"){
+
+    const api_url = "https://api.idilia.com/1/text/paraphrase.json";
+    const params = {
+      key: "***REMOVED***",
+      text: req.query.text,
+      'paraphrasingRecipe': "search",
+      'textMime': "text/query; charset=utf8",
+      'maxCount': "40",
+      'minWeight': .1
+    };
+    const options = {
+      url: api_url,
+      qs: params,
+    }
+    console.log(options);
+    request(
+      options,
+      function(err, response, body){
+        console.log(err);
+        console.log(response.statusCode);
+        console.log(body);
+        var response_object = JSON.parse(body);
+        var paraphrases = response_object["paraphrases"];
+        var surfaces = [];
+        var weights = [];
+        if(paraphrases){
+          paraphrases.forEach(function(paraphrase_object){
+            var surface = paraphrase_object["surface"];
+            var weight = parseInt(paraphrase_object["weight"]);
+            surface = surface.replace(/\"/g, "");
+            surfaces.push(surface);
+          });
+        }
+        res.end(JSON.stringify(surfaces));
+        return;
+      }
+    );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  }
   else if( mode == "bing_image"){
     Bing.images(
       req.query.search,
