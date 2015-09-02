@@ -8,7 +8,8 @@ var Bing = require('node-bing-api')({ accKey:"***REMOVED***"});
 
 
 var ms_translate = require('./ms_translate.js');
-var ms_translate_instance = new ms_translate();
+var translation_client_secret = "***REMOVED***";
+var ms_translate_instance = new ms_translate(translation_client_secret);
 
 
 app.get('/*', function(req,res){
@@ -20,12 +21,19 @@ app.get('/*', function(req,res){
   console.log(req.url);
 
   if(mode == "translate"){
-    ms_translate_instance.PerformTranslation(
+    ms_translate_instance.Translate(
       req.query.from, 
       req.query.to, 
       req.query.text,
-      function(translated_string){
-        res.end(translated_string)
+      function(err, translated_string){
+        if(err){
+          console.error(err);
+          res.end(req.query.text);
+        }
+        else{
+          res.end(translated_string);
+        }
+        return;
       }
     );
   }
