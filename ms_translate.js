@@ -6,6 +6,8 @@ var ms_translate = function(client_secret){
   var self = this;
   self.access_token = undefined;
   self.client_secret = client_secret;
+  const NO_ERROR = null;
+  const NO_RETURN = null;
 
   self.KNOWN_LANGUAGE_CODES = ["ar", "bs-Latn", "bg", "ca", "zh-CHS", "zh-CHT", "hr", "cs", "da", "nl", "en", "et", "fi", "fr", "de", "el", "ht", "he", "hi", "mww", "hu", "id", "it", "ja", "tlh", "tlh-Qaak", "ko", "lv", "lt", "ms", "mt", "no", "fa", "pl", "pt", "otq", "ro", "ru", "sr-Cyrl", "sr-Latn", "sk", "sl", "es", "sv", "th", "tr", "uk", "ur", "vi", "cy", "yua"];
 
@@ -25,17 +27,13 @@ var ms_translate = function(client_secret){
   translated_text_callback will be called with two arguments
   1) error: 
     a.  If there are no errors: undefined
-    b.  If there are errors: an object with key "error" and value that describes the error
+    b.  If there are errors: an object with key "error" and value that describes the error(s)
   2) translated_text: an object with 
     key "text" and string value that is the translated text
-    key "skipped" and boolean value that is whether or not the translation was skipped for being not worth translating
 
   */
   self.Translate = function(from, to, text, translated_text_callback){
-    var NO_RETURN = null;
-    var NO_ERROR = null;
     var success_object;
-
 
     // Check for reasons to not even attempt translation
     if(IsRequestMalformed(from,to,text)){
@@ -46,7 +44,7 @@ var ms_translate = function(client_secret){
 
     if(NotWorthTranslating(from, to, text)){
       console.log("\"" + text + "\" not worth translating from " + from + " to " + to);
-      var success_object = {"text": text, "skipped": true}
+      var success_object = {"text": text}
       translated_text_callback(NO_ERROR, success_object);
       return;
     }
@@ -69,12 +67,9 @@ var ms_translate = function(client_secret){
                 return;
               }
               else{
-                console.log(translated_text);
                 translated_text = translated_text.trim().slice(1,-1);
-                console.log(translated_text);
-
                 console.log("\"" + text + "\" translated to \"" + translated_text+"\"");
-                success_object = {"text":translated_text,"skipped": false}
+                success_object = {"text":translated_text}
                 translated_text_callback(NO_ERROR, success_object);
                 return;
               }
@@ -133,7 +128,6 @@ var ms_translate = function(client_secret){
   }
 
   var NotWorthTranslating = function(from, to, text){
-
     var stripped_text = text.replace(/[^a-zA-Z]/g, ''); // remove all non-alphabet characters
     if(!stripped_text){
       return true;
@@ -147,6 +141,7 @@ var ms_translate = function(client_secret){
   var ConsumeTranslationAPI = function(text,from,to,access_token,api_response_callback){
     const api_url = 'http://api.microsofttranslator.com/V2/Ajax.svc/Translate';
     const auth_prefix = "Bearer ";
+
     var GET_params = {
       from: from,
       to: to, 
@@ -165,12 +160,11 @@ var ms_translate = function(client_secret){
         var return_text;
         if(HasErrors(err,response,body)){
           ReportErrors("Translation of " + text,err,response,body);
-          api_response_callback({"error":"error from translate api"});
+          api_response_callback({"error":"error from translate api"}, NO_RETURN);
         }
         else{
           // Since the API doesn't return JSON, I can't tell if it liked the call or not.  This means that we will think that the translated text is something like "ArgumentOutOfRangeException: 'to' must be a valid language..."  I don't expect us to validate every parameter here, though.
-          return_text = body;
-          api_response_callback(null, return_text);
+          api_response_callback(NO_ERROR, body);
         }
         return;
       }
@@ -198,13 +192,37 @@ var ms_translate = function(client_secret){
   }
   var GetAccessToken = function(active_token_callback){
     if(self.access_token && self.access_token.IsUpToDate()){
-      active_token_callback(null, self.access_token);
+      active_token_callback(NO_ERROR, self.access_token);
+      return;
     }
     else{
-      ConsumeAccessTokenAPI(active_token_callback);
+      GenerateNewAccessToken(active_token_callback);
     }
   }
-  var ConsumeAccessTokenAPI = function(active_token_callback){
+
+  var GenerateNewAccessToken = function(active_token_callback){
+    ConsumeAccessTokenAPI(
+      function(err, token_api_response){
+        if(err){
+          active_token_callback(err, NO_RETURN);
+          return;
+        }
+        else{
+          var new_token = ParseAccessTokenAPI(token_api_response);
+          self.access_token = new_token;
+          active_token_callback(NO_ERROR, new_token);
+        }
+      }
+    );
+  }
+
+  var ParseAccessTokenAPI = function(api_response){
+    var token_object = JSON.parse(api_response);
+    var token_body = token_object["access_token"];
+    var new_access_token = new AccessToken(token_body);
+    return new_access_token;
+  }
+  var ConsumeAccessTokenAPI = function(api_response_callback){
     console.log("Retrieving new token...");
     const api_url = "https://datamarket.accesscontrol.windows.net/v2/OAuth2-13";
     const params = querystring.stringify({
@@ -222,15 +240,11 @@ var ms_translate = function(client_secret){
       function(err, response, body){
         if(HasErrors(err,response,body)){
           ReportErrors("acquiring access token",err,response,body);
-          active_token_callback({"error":"failed to get a new token"});
+          api_response_callback({"error":"failed to get a new token.  Is your client_secret correct? You provided \""+self.client_secret+"\""}, NO_RETURN);
           return;
         }
         else{
-          var token_object = JSON.parse(body);
-          var token_body = token_object["access_token"];
-          var new_access_token = new AccessToken(token_body);
-          self.access_token = new_access_token;
-          active_token_callback(null, new_access_token);
+          api_response_callback(NO_ERROR,body);
         }
       }
     );
