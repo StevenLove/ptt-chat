@@ -7,9 +7,12 @@ var ms_translate = function(client_secret){
   self.access_token = undefined;
   self.client_secret = client_secret;
 
+  self.KNOWN_LANGUAGE_CODES = ["ar", "bs-Latn", "bg", "ca", "zh-CHS", "zh-CHT", "hr", "cs", "da", "nl", "en", "et", "fi", "fr", "de", "el", "ht", "he", "hi", "mww", "hu", "id", "it", "ja", "tlh", "tlh-Qaak", "ko", "lv", "lt", "ms", "mt", "no", "fa", "pl", "pt", "otq", "ro", "ru", "sr-Cyrl", "sr-Latn", "sk", "sl", "es", "sv", "th", "tr", "uk", "ur", "vi", "cy", "yua"];
+
   /*
   This function is the only one exported from this module.  It translates text from one language to another and then invokes a callback on the resulting translated text.  It makes use of the Microsoft Translator API featured on the Microsoft Azure Marketplace
   
+  Parameters
   from: string, source language's code
   to:   string, target language's code
   text: string, text to be translated from one language to another
@@ -17,84 +20,121 @@ var ms_translate = function(client_secret){
   
   language code examples: {en: English, es: Spanish, fr: French}
   complete list of language codes at https://msdn.microsoft.com/en-us/library/hh456380.aspx
+
+  Output
+  translated_text_callback will be called with two arguments
+  1) error: 
+    a.  If there are no errors: undefined
+    b.  If there are errors: an object with key "error" and value that describes the error
+  2) translated_text: an object with 
+    key "text" and string value that is the translated text
+    key "skipped" and boolean value that is whether or not the translation was skipped for being not worth translating
+
   */
   self.Translate = function(from, to, text, translated_text_callback){
+    var NO_RETURN = null;
+    var NO_ERROR = null;
+    var success_object;
+
+
     // Check for reasons to not even attempt translation
+    if(IsRequestMalformed(from,to,text)){
+      var malformed_request_error_object = HowIsRequestMalformed(from,to,text);
+      translated_text_callback(malformed_request_error_object, NO_RETURN);
+      return;
+    }
+
     if(NotWorthTranslating(from, to, text)){
       console.log("\"" + text + "\" not worth translating from " + from + " to " + to);
-      translated_text_callback(null, text);
+      var success_object = {"text": text, "skipped": true}
+      translated_text_callback(NO_ERROR, success_object);
       return;
     }
-    if(!from || !to){
-      translated_text_callback({"error": "You must specify the from and to parameters"})
-      return;
-    }
+    // Okay we'll translate your dirty message
     GetAccessToken(
       function(token_error, token){
         if(token_error){
-          translated_text_callback(token_error);
+          translated_text_callback(token_error,NO_RETURN);
           return;
         }
-        // ConsumeParaphraseAPI(
-        //   text,
-        //   token
-        // );
-        ConsumeTranslationAPI(
-          text,
-          from,
-          to,
-          token,
-          function(err, translated_text){
-            translated_text = RemoveQuotesAroundString(translated_text);
-            console.log("\"" + text + "\" translated to \"" + translated_text+"\"");
-            translated_text_callback(null, translated_text);
-          }
-        );
+        else{
+          ConsumeTranslationAPI(
+            text,
+            from,
+            to,
+            token,
+            function(api_error, translated_text){
+              if(api_error){
+                translated_text_callback(api_error, NO_RETURN);
+                return;
+              }
+              else{
+                console.log(translated_text);
+                translated_text = translated_text.trim().slice(1,-1);
+                console.log(translated_text);
+
+                console.log("\"" + text + "\" translated to \"" + translated_text+"\"");
+                success_object = {"text":translated_text,"skipped": false}
+                translated_text_callback(NO_ERROR, success_object);
+                return;
+              }
+            }
+          );
+        }
       }
     );
   }
 
-  var ConsumeParaphraseAPI = function(text, access_token, api_response_callback){
-    const api_url = 'http://api.microsofttranslator.com/v3/json/paraphrase';
-    const auth_prefix = "Bearer ";
-    var GET_params = {
-      appId: access_token.body,
-      language: "en", 
-      sentence: text
-    };
-    var options = {
-      url: api_url,
-      qs: GET_params,
-      headers:{
-        'Authorization': auth_prefix+access_token.body
-      }
+  var IsRequestMalformed = function(from, to, text){
+    if((!text) ||
+      (!to)||
+      (!from) ||
+      (!IsKnownTranslatorLanguageCode(to)) ||
+      (!IsKnownTranslatorLanguageCode(from))){
+      return true;
     }
-    request(
-      options,
-      function(err, response, body){
-        console.log(err);
-        console.log(response.statusCode);
-        console.log(body);
-        // var return_text;
-        // if(HasErrors(err,response,body)){
-        //   ReportErrors("Translation of " + text,err,response,body);
-        //   api_response_callback({"error":"error from translate api"});
-        // }
-        // else{
-          // Since the API doesn't return JSON, I can't tell if it liked the call or not.  This means that we will think that the translated text is something like "ArgumentOutOfRangeException: 'to' must be a valid language..."  I don't expect us to validate every parameter here, though.
-          // return_text = body;
-          // api_response_callback(null, return_text);
-        // }
-        return;
+    return false;
+  }
+
+  var HowIsRequestMalformed = function(from,to,text){
+    var error_object = {}
+    var error_text = "";
+    if(!text){
+      error_text += "You must provide the \"text\" parameter (the text you want translated).  ";
+    }
+    if(!from){
+      error_text += "You must provide the \"from\" parameter (the language of the text you provide).  ";
+    }
+    else if(!IsKnownTranslatorLanguageCode(from)){
+      error_text += "The \"from\" parameter must be a known language code.  Known language codes: " + JSON.stringify(self.KNOWN_LANGUAGE_CODES) + ".  You supplied: \"" + from +"\".  ";
+    }
+    if(!to){
+      error_text += "You must provide the \"to\" parameter (the language you want your text to be translated to).  ";
+    }
+    else if(!IsKnownTranslatorLanguageCode(to)){
+      error_text += "The \"to\" parameter must be a known language code.  Known language codes: " + JSON.stringify(self.KNOWN_LANGUAGE_CODES) + ".  You supplied: \"" + to +"\".  ";
+    }
+    if(!error_text){
+      error_object = undefined;
+    }
+    else{
+      error_object = {"error": error_text};
+    }
+    return error_object;
+  }
+
+  var IsKnownTranslatorLanguageCode = function(code){
+    return self.KNOWN_LANGUAGE_CODES.some(function(known_code){
+      if(code === known_code){
+        return true;
       }
-    );
+    });
+    return false;
   }
 
   var NotWorthTranslating = function(from, to, text){
-    if(!text){ //undefined or ""
-      return true;
-    }
-    var stripped_text = text.replace(/[^a-zA-Z]/g, '');
+
+    var stripped_text = text.replace(/[^a-zA-Z]/g, ''); // remove all non-alphabet characters
     if(!stripped_text){
       return true;
     }
@@ -209,8 +249,6 @@ var ms_translate = function(client_secret){
     const ERROR_TAG = "ERROR: ";
     const WARN_TAG = "WARNING: ";
 
-    console.error("Some errors occurred ------------");
-
     if(err){
       console.error(ERROR_TAG + "Outright error performing " + description + ".");
     }
@@ -225,7 +263,6 @@ var ms_translate = function(client_secret){
     }
 
     console.error(body);
-    console.error("------------");
   }
 
   var RemoveQuotesAroundString = function(string){

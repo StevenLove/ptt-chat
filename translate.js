@@ -25,13 +25,13 @@ app.get('/*', function(req,res){
       req.query.from, 
       req.query.to, 
       req.query.text,
-      function(err, translated_string){
-        if(err){
-          console.error(err);
-          res.end(req.query.text);
+      function(err_obj, success_obj){
+        if(err_obj){
+          console.error(err_obj);
+          res.end(JSON.stringify(err_obj));
         }
         else{
-          res.end(translated_string);
+          res.end(JSON.stringify(success_obj));
         }
         return;
       }
