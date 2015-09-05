@@ -322,6 +322,33 @@ function PerformTransformation(tbuilder){
       ToSmartSynonym(content, MakeSmartSynonymCallback(carton_index, tbuilder));
     }
   }
+
+  if (transform_name == "Paraphrase"){
+    tbuilder.carton.counter = 0;
+    tbuilder.carton.max = tbuilder.working_content.length;
+    tbuilder.carton.items = [];
+    for(var carton_index in tbuilder.working_content){
+      var content = tbuilder.working_content[carton_index];
+      ToParaphrase(content, MakeParaphraseCallback(carton_index, tbuilder));
+    }
+  }
+}
+function MakeParaphraseCallback(carton_index, tbuilder){
+  callback = function(err, response, body){
+    // body = JSON.parse(body);
+    PutInCarton(tbuilder.carton,body["text"],carton_index,MakeParaphraseCallback(tbuilder));
+  }
+  return callback;
+}
+function MakeParaphraseDoneCallback(tbuilder){
+  var f = function(){
+     console.log("done!");
+      tbuilder.working_content = tbuilder.carton.items;
+      console.log("after paraphrase: " + tbuilder.working_content);
+      tbuilder.transform_index++;
+      PerformTranslation(tbuilder);
+  }
+  return f;
 }
 
 function MakeSmartSynonymCallback(carton_index, tbuilder){
@@ -468,6 +495,25 @@ function ToSmartSynonym(text, callback){
   var GET_params = {
     mode: "smartsynonym",
     sentence: text
+  };
+  var options = {
+    url: api_url,
+    qs: GET_params
+  }
+  request(
+    options, 
+    callback
+  );
+}
+
+function ToParaphrase(text, callback){
+  const api_url = 'http://localhost:8286'
+  // const args = "mode=translate&from=en&to=es&text="+text;
+  // const api_url = domain + "?" + args;
+  var GET_params = {
+    mode: "paraphrase",
+    search: text,
+    selector: "random"
   };
   var options = {
     url: api_url,

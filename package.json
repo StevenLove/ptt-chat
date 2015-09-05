@@ -3,6 +3,7 @@
   "version": "0.1.1",
   "description": "my first socket.io app",
   "dependencies": {
+    "async": "^1.4.2",
     "express": "^4.10.2",
     "google-images": "^0.1.0",
     "googleapis": "^2.1.3",

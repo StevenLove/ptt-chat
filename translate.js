@@ -11,6 +11,10 @@ var ms_translate = require('./ms_translate.js');
 var translation_client_secret = "***REMOVED***";
 var ms_translate_instance = new ms_translate(translation_client_secret);
 
+var idilia_paraphrase = require('./idilia_paraphrase.js');
+var idilia_secret = "***REMOVED***";
+var idilia_paraphrase_instance = new idilia_paraphrase(idilia_secret);
+
 
 app.get('/*', function(req,res){
   res.header('Access-Control-Allow-Origin', "*");
@@ -39,57 +43,20 @@ app.get('/*', function(req,res){
   }
   else if( mode == "paraphrase"){
 
-    const api_url = "https://api.idilia.com/1/text/paraphrase.json";
-    const params = {
-      key: "***REMOVED***",
-      text: req.query.text,
-      'paraphrasingRecipe': "search",
-      'textMime': "text/query; charset=utf8",
-      'maxCount': "40",
-      'minWeight': .1
-    };
-    const options = {
-      url: api_url,
-      qs: params,
-    }
-    console.log(options);
-    request(
-      options,
-      function(err, response, body){
-        console.log(err);
-        console.log(response.statusCode);
-        console.log(body);
-        var response_object = JSON.parse(body);
-        var paraphrases = response_object["paraphrases"];
-        var surfaces = [];
-        var weights = [];
-        if(paraphrases){
-          paraphrases.forEach(function(paraphrase_object){
-            var surface = paraphrase_object["surface"];
-            var weight = parseInt(paraphrase_object["weight"]);
-            surface = surface.replace(/\"/g, "");
-            surfaces.push(surface);
-          });
+    idilia_paraphrase_instance.Paraphrase(
+      req.query.text,
+      function(err_obj, success_obj){
+        if(err_obj){
+          // res.write("error");
+          res.end(JSON.stringify(err_obj));
         }
-        res.end(JSON.stringify(surfaces));
+        else{
+          // res.write("success");
+          res.end(JSON.stringify(success_obj));
+        }
         return;
       }
     );
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   }
   else if( mode == "bing_image"){
     Bing.images(
