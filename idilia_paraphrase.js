@@ -63,6 +63,9 @@ var idilia_paraphrase = function(key){
   }
   // We split up sentences of more than 8 tokens and make repeated calls to the API, since it accepts a max of 8 tokens.
   self.Paraphrase = function(text,paraphrased_text_callback){
+    console.log("IDILIA PARAPHRASE");
+    console.log(text);
+
     var query_list = SplitToParaphraseQueries(text);
     var paraphrased_chunks = [];
     async.forEachOf(
@@ -186,7 +189,7 @@ var idilia_paraphrase = function(key){
   }
   var SplitByClauses = function(string){
     // Regex: any characters (non-greedy) that are followed by at least one claus-ending punctuation (;!.?), and that punctuation is followed by a space or the end of the line.  This means that "3.14" won't be separated, nor will "don;t" or "why?not!!".
-    var tokens =  string.match(/.*?[;!\.\?]+( |$)/g).filter(function(token){
+    var tokens =  string.match(/.*?([;!\.\?]+( |$)|$)/g).filter(function(token){
       return token.length>0;
     });
     return tokens;
