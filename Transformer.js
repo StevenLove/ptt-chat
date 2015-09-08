@@ -47,29 +47,36 @@ var Transformer = function(){
     console.log("  " + JSON.stringify(options));
     var f;
     switch(options.mode){
-      case "translate":
+      case "Translate":
         f = Translate;
         break;
-      case "paraphrase":
+      case "Paraphrase":
         f = Paraphrase;
         break;
-      case "bingimage":
+      case "BingImage":
         f = BingImage;
         break;
-      case "googleimage":
+      case "GoogleImage":
         f = GoogleImage;
         break;
-      case "synonymize":
+      case "Synonymize":
         f = Synonymize;
         break;
-      case "partofspeech":
+      case "PartOfSpeech":
         f = PartsOfSpeechify;
         break;
-      case "smartsynonymize":
+      case "SmartSynonymize":
         f = SmartSynonymize;
+        break;
+      default :
+        console.log("DOING NOTHING");
+        f = DoNothing;
         break;
     }
     f(text,options,callback);
+  }
+  var DoNothing = function(text, options, callback){
+    callback(null,text);
   }
 
   var Translate = function(text, options, callback){
@@ -224,7 +231,7 @@ var Transformer = function(){
   }
 
 
-  var Synonymize = function(text, options, callback){
+  var ShortSynonymize = function(text, options, callback){
     console.log("Synonymizing " + text + " with options " + JSON.stringify(options));
 
     ConsumeBigHugeSynonymAPI(
@@ -235,6 +242,33 @@ var Transformer = function(){
           success = ApplySynonymizeOptions(body,options);
         }
         callback(err,success);
+      }
+    );
+  }
+
+  var Synonymize = function(text, options, callback){
+    var result = {"words":[]};
+    var words = text.split(" ");
+
+    async.forEachOf(
+      words,
+      function(word, index, cb){
+        ShortSynonymize(
+          word,
+          options,
+          function(err,succ){
+            if(err) cb(err);
+            result["words"][index] = {};
+            result["words"][index]["original"] = word;
+            result["words"][index]["list"] = succ;
+            console.log(result);
+            cb();
+          }
+        );
+      },
+      function(err){
+        console.log('end');
+        callback(err,result);
       }
     );
   }
@@ -329,7 +363,7 @@ var Transformer = function(){
     var synonym_lists = [];
     var count_current = 0;
     var count_total = sentence.words.length;
-    var result = {};
+    var result = {"words": []};
     var synonym_options_list = [];
     async.forEachOf(
       sentence.words,
@@ -338,7 +372,7 @@ var Transformer = function(){
         synonym_options_list[index] = Clone(options);
         synonym_options_list[index]["pos"] = lay_part;
         synonym_options_list[index]["text"] = word;
-        Synonymize(
+        ShortSynonymize(
           word,
           synonym_options_list[index],
           function(err, success){
@@ -353,7 +387,12 @@ var Transformer = function(){
         );
       },
       function(err){
-        callback(err,synonym_lists);
+        sentence.words.forEach(function(word,index){
+          result["words"][index] = {};
+          result["words"][index]["original"] = word;
+          result["words"][index]["list"] = synonym_lists[index];
+        });
+        callback(err,result);
       }
     );
   }

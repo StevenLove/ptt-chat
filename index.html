@@ -199,7 +199,7 @@ function FacebookLoggedInCallback() {
 
 
       function PopulateTransformDropdown(){
-        var options = ["Synonym","SmartSynonym","Split","Spanish","Reverse","Picture", "Paraphrase"];
+        var options = ["Synonymize","SmartSynonymize","Split","Spanish","Reverse","Picture", "Paraphrase"];
         options.forEach(function(option){
           $("#transform_dropdown").append("<option value = " + option +">" + option + "</option>");
         });
@@ -208,7 +208,7 @@ function FacebookLoggedInCallback() {
       function EnableTransformButton(){
         $("#transform_button").click(function(){
           var transform = $("#transform_dropdown").val();
-          document.transforms.push(transform);
+          document.transforms = [transform];
         });
       }
 

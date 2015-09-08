@@ -5,6 +5,10 @@ var io = require('socket.io')(app_http);
 var phonetic = require('phonetic');
 var request = require('request');
 
+var Transformer = require('./Transformer.js');
+var transformer = new Transformer();
+
+
 var buffer = {};
 buffer.array = [];
 buffer.max = 50;
@@ -322,16 +326,6 @@ function PerformTransformation(tbuilder){
       ToSmartSynonym(content, MakeSmartSynonymCallback(carton_index, tbuilder));
     }
   }
-
-  if (transform_name == "Paraphrase"){
-    tbuilder.carton.counter = 0;
-    tbuilder.carton.max = tbuilder.working_content.length;
-    tbuilder.carton.items = [];
-    for(var carton_index in tbuilder.working_content){
-      var content = tbuilder.working_content[carton_index];
-      ToParaphrase(content, MakeParaphraseCallback(carton_index, tbuilder));
-    }
-  }
 }
 function MakeParaphraseCallback(carton_index, tbuilder){
   callback = function(err, response, body){
@@ -455,14 +449,54 @@ function GetRandomElement(array){
 
 
 function Transform(chat_message){
-  var tbuilder = {};
-  tbuilder.chat_message = chat_message;
-  tbuilder.working_content = [chat_message.original_text];
-  tbuilder.carton = {};
-  tbuilder.carton.items = [];
-  tbuilder.transform_index = 0;
 
-  PerformTransformation(tbuilder);
+  // chat_message.transform_list.forEach
+
+  var mode = chat_message.transform_list[0];
+  var text = chat_message.original_text;
+
+  transformer.Transform(
+    text,
+    {"mode": mode},
+    function(err,succ){
+      console.log(err);
+      console.log(succ);
+      var result;
+      if(mode === "Paraphrase"){
+        result = ParseParaphrased(succ);
+      }
+      if(mode === "Synonymize"){
+        result = ParseSmartSynonymize(succ);
+      }
+      if(mode === "SmartSynonymize"){
+        result = ParseSmartSynonymize(succ);
+      }
+      chat_message.transformed_text = result;
+      io.emit("chat message", chat_message);
+      buffer.push(chat_message);
+    }
+  );
+}
+
+var ParseParaphrased = function(success){
+  return success["text"];
+}
+var ParseSmartSynonymize = function(success){
+  var sentence = "";
+  var result = success["words"].reduce(
+    function(prev,curr){
+      var chosen_word;
+      if(curr["list"].length>0){
+        chosen_word = GetRandomElement(curr["list"]);
+      }
+      else{
+        chosen_word = curr["original"];
+      }
+      return prev + chosen_word + " ";
+    },
+    ""
+  );
+  return result.trim();
 }
 
 function PutInCarton(carton, item, index, carton_full_function){
