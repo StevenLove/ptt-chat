@@ -53,7 +53,7 @@ var Transformer = function(){
       case "Paraphrase":
         f = Paraphrase;
         break;
-      case "BingImage":
+      case "Picture":
         f = BingImage;
         break;
       case "GoogleImage":
@@ -103,7 +103,8 @@ var Transformer = function(){
     return thumb_urls;
   }
 
-  var BingImage = function(text, options, callback){
+
+  var BingImageShort = function(text, options, callback){
     var bing_options =  {top: 3, market: 'en-US'};
     Bing.images(
       text,
@@ -117,6 +118,39 @@ var Transformer = function(){
       }
     );
   }
+
+  var ApplyToList = function(fn, array, options, callback){
+    var result = [];
+    async.forEachOf(
+      array,
+      function(item, index, cb){
+        fn(
+          item,
+          options,
+          function(i){
+            return function(err,succ){
+              if(err){
+                console.log(err);
+              }
+              else{
+                result[i] = succ;
+              }
+              cb();
+              // callback(err,succ);
+            }
+          }(index)
+        );
+      },
+      function(err){
+        // console.log(result);
+        callback(err,result);
+      }
+    );
+  }
+
+ var BingImage = function (text, options, callback){
+   ApplyToList(BingImageShort, text.split(" "), options, callback);
+ }
 
   var GoogleSearchPage = function(text, page_num, callback){
     googleimages.search({
@@ -245,6 +279,7 @@ var Transformer = function(){
       }
     );
   }
+
 
   var Synonymize = function(text, options, callback){
     var result = {"words":[]};

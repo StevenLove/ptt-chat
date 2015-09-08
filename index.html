@@ -199,9 +199,12 @@ function FacebookLoggedInCallback() {
 
 
       function PopulateTransformDropdown(){
-        var options = ["Synonymize","SmartSynonymize","Split","Spanish","Reverse","Picture", "Paraphrase"];
+        var options = ["None", "Synonymize", "Antonymize", "SmartSynonymize","Spanish","Picture", "Paraphrase"];
         options.forEach(function(option){
           $("#transform_dropdown").append("<option value = " + option +">" + option + "</option>");
+        });
+        $("#transform_dropdown").change(function(){
+          document.transforms = [$("#transform_dropdown option:selected").val()];
         });
       }
 
@@ -338,6 +341,7 @@ function FacebookLoggedInCallback() {
         this.timestamp = new Date().getTime();
         this.target = (directed_at_bot)? "Everyone" : "Humans";
         this.original_text = message;
+        this.is_images = false;
         //transformed_text
         //image_url_lists
         this.transform_list = document.transforms;
@@ -489,22 +493,30 @@ function FacebookLoggedInCallback() {
         return (author1 == author2);
       }
 
+      var AddImageMessage = function(container, text){
+        var words = text.split(" ");
+        var img_containers = [];
+        words.forEach(function(word,index){
+          img_containers[index] = $("<div>");
+          img_containers[index].css('display','inline-block');
+          GoogleSearch(img_containers[index],word);
+          container.append(img_containers[index]);
+        });
+        ScrollDown();
+      }
+
+      var AddTextMessage = function(container, text){
+        var text_container = $("<div>");
+        text_container.text(text);
+        container.append(text_container);
+        ScrollDown();
+      }
+
       function ChatMessageContainer(chat_message){
         // var cur_author = chat_message.author_id;
         var prev_container = $("#messages").children().last();
         // var prev_author = prev_container.attr("name");
         var container;
-
-        // if(prev_author && prev_author == cur_author){
-        //   container = prev_container;
-        // }
-        // else{
-        //   container = ChatLine(chat_message);
-        //   $("#messages").append(container);
-        // }
-        // console.log(document.prev_chat_message);
-        // console.log(chat_message);
-        // console.log("----");
 
         if(IsSameSentence(document.prev_chat_message,chat_message)){
           container = prev_container;
@@ -516,52 +528,14 @@ function FacebookLoggedInCallback() {
         document.prev_chat_message = chat_message;
 
 
-        
-
-
-
-        var cb = function(data){
-          // console.log(data);
-           var img_container = $("<div>");
-            container.find("[name='chatline_images']").append(img_container);
-            img_container.css('display','inline-block');
-          img_container.append(data);
-          img_container.append("&nbsp;");
-          // GoogleSearch(img_container,data);
-        }
-        console.log(chat_message.transformed_text);
-        // TurnSpanish(chat_message.original_text,cb);
-
-
-        if(chat_message.image_url_lists && chat_message.image_url_lists.length > 0){
-          for(var i in chat_message.image_url_lists){
-            var img_container = $("<div>");
-            container.find("[name='chatline_images']").append(img_container);
-            img_container.css('display','inline-block');
-            var img_url_list = chat_message.image_url_lists[i];
-            for(var j in img_url_list){
-              var img_url = img_url_list[j];
-              img_container.append(ResultImage(img_url));
-            }
-            CycleThroughImages(img_container);
-          }
+        var cont = container.find("[name='chatline_images']");
+        if(chat_message.is_images){
+          AddImageMessage(cont,chat_message.original_text);
         }
         else{
-          cb(chat_message.transformed_text);
+          AddTextMessage(cont,chat_message.transformed_text);
         }
       }
-
-
-      function TurnSpanish(text, callback){
-        $.ajax({
-            type: "GET",
-            url: "http://localhost:8286/?mode=translate&from=en&to=es&text=" + text,
-            success: callback
-        });
-      }
-
-
-
 
 
       function ResultImage(url){

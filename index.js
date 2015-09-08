@@ -204,232 +204,14 @@ function TooManyUsers(){
   return false;
 }
 
+
+
 function OnChatMessage(chat_message){
-    // if(chat_message.one_word_at_a_time){
-    //   var original_words = chat_message.original_text.split(/\s+/);
-    //   var transformed_words = [];
-    //   for(var index in original_words){
-    //     var original_word = original_words[index];
-    //     var transformed_word = original_word.toUpperCase();
-    //     transformed_words.push(transformed_word);
-    //   }
-    //   chat_message.transformed_text = 
-    // }
-    // io.emit('chat message', chat_message);
-    // buffer.push(chat_message);
     console.log(chat_message);
     chat_message = JSON.parse(JSON.stringify(chat_message));
-
     Transform(chat_message);
 }
 
-function PerformTransformation(tbuilder){
-
-  if(tbuilder.transform_index >= tbuilder.chat_message.transform_list.length){
-    var transformed_text = tbuilder.working_content.join(" ");
-    tbuilder.chat_message.transformed_text = transformed_text;
-    io.emit("chat message", tbuilder.chat_message);
-    buffer.push(tbuilder.chat_message);
-  }
-
-
-  var transform_name = tbuilder.chat_message.transform_list[tbuilder.transform_index];
-
-  var MakeCartonFullFunction = function(tbuilder){
-    var f = function(){
-      console.log("done!");
-      tbuilder.working_content = tbuilder.carton.items;
-      console.log("after spanish: " + tbuilder.working_content);
-      tbuilder.transform_index++;
-      PerformTransformation(tbuilder);
-    }
-    return f;
-  }
-
-  function MakeCartonCallback(carton_index, tbuilder){
-    var callback = function(err, response, body){
-      console.log(body);
-      PutInCarton(tbuilder.carton, body ,carton_index, MakeCartonFullFunction(tbuilder));
-    }
-    return callback;
-  }
-
-  if (transform_name == "Split"){
-    var placeholder = [];
-    for(var content_index in tbuilder.working_content){
-      var content = tbuilder.working_content[content_index];
-      var words = content.split(/\s+/);
-      for(word_index in words){
-        var word = words[word_index];
-        placeholder.push(word);
-      }
-    }
-    tbuilder.working_content = placeholder;
-    console.log("after split: " + tbuilder.working_content);
-    tbuilder.working_content = tbuilder.working_content;
-    tbuilder.transform_index++;
-    PerformTransformation(tbuilder);
-  }
-
-  if (transform_name == "Spanish"){
-    tbuilder.carton.counter = 0;
-    tbuilder.carton.max = tbuilder.working_content.length;
-    tbuilder.carton.items = [];
-    for(var carton_index in tbuilder.working_content){
-      var content = tbuilder.working_content[carton_index];
-      ToSpanish(
-        content,
-        MakeCartonCallback(carton_index, tbuilder)
-      )
-    }
-  }
-
-  if (transform_name == "Reverse"){
-    var placeholder = [];
-    for(var index in tbuilder.working_content){
-      var content = tbuilder.working_content[index];
-      var reversed = content.split('').reverse().join('');
-      placeholder.push(reversed);
-    }
-    console.log("after reverse: " + placeholder);
-    tbuilder.working_content = placeholder;
-    tbuilder.transform_index++;
-    PerformTransformation(tbuilder);
-  }
-
-  if (transform_name == "Picture"){
-    tbuilder.carton.counter = 0;
-    tbuilder.carton.max = tbuilder.working_content.length;
-    tbuilder.carton.items=[];
-    for(var carton_index in tbuilder.working_content){
-      var content = tbuilder.working_content[carton_index];
-      ToImageURLs(content, MakePictureCallback(carton_index, tbuilder));
-    }
-  }
-
-  if (transform_name == "Synonym"){
-    tbuilder.carton.counter = 0;
-    tbuilder.carton.max = tbuilder.working_content.length;
-    tbuilder.carton.items = [];
-    for(var carton_index in tbuilder.working_content){
-      var content = tbuilder.working_content[carton_index];
-      ToSynonym(content, MakeSynonymCallback(carton_index, tbuilder));
-    }
-  }
-
-  if (transform_name == "SmartSynonym"){
-    tbuilder.carton.counter = 0;
-    tbuilder.carton.max = tbuilder.working_content.length;
-    tbuilder.carton.items = [];
-    for(var carton_index in tbuilder.working_content){
-      var content = tbuilder.working_content[carton_index];
-      ToSmartSynonym(content, MakeSmartSynonymCallback(carton_index, tbuilder));
-    }
-  }
-}
-function MakeParaphraseCallback(carton_index, tbuilder){
-  callback = function(err, response, body){
-    // body = JSON.parse(body);
-    PutInCarton(tbuilder.carton,body["text"],carton_index,MakeParaphraseCallback(tbuilder));
-  }
-  return callback;
-}
-function MakeParaphraseDoneCallback(tbuilder){
-  var f = function(){
-     console.log("done!");
-      tbuilder.working_content = tbuilder.carton.items;
-      console.log("after paraphrase: " + tbuilder.working_content);
-      tbuilder.transform_index++;
-      PerformTranslation(tbuilder);
-  }
-  return f;
-}
-
-function MakeSmartSynonymCallback(carton_index, tbuilder){
-  callback = function(err, response, body){
-    body = JSON.parse(body);
-    var result = "";
-    body.forEach(function(synonym_list){
-      if(synonym_list.length>1){
-        result+=(GetRandomElement(synonym_list.slice(1)) + " ");
-      }
-      else{
-        result+=(synonym_list[0] + " ")
-      }
-    });
-    result = result.trim();
-    PutInCarton(tbuilder.carton,result,carton_index,MakeSmartSynonymDoneCallback(tbuilder));
-  }
-  return callback;
-}
-function MakeSmartSynonymDoneCallback(tbuilder){
-  var f = function(){
-     console.log("done!");
-      tbuilder.working_content = tbuilder.carton.items;
-      // tbuilder.chat_message.image_url_lists = tbuilder.working_content;
-      console.log("after smart synonyms: " + tbuilder.working_content);
-      tbuilder.transform_index++;
-      PerformTransformation(tbuilder);
-  }
-  return f;
-}
-
-function MakePictureCallback(carton_index, tbuilder){
-  callback = function(err, response, body){
-    if(err){
-      console.log(err);
-    }
-    else{
-      body = JSON.parse(body);
-    }
-    // tbuilder.transform_index ++;
-    // PerformTransformation(tbuilder);
-    // console.log("after picture: " + body);
-
-    PutInCarton(tbuilder.carton, body ,carton_index, MakePictureDoneFunction(tbuilder));
-  }
-  return callback;
-}
-
-function MakePictureDoneFunction(tbuilder){
-    var f = function(){
-      console.log("done!");
-      tbuilder.working_content = tbuilder.carton.items;
-      tbuilder.chat_message.image_url_lists = tbuilder.working_content;
-      console.log("after picture: " + tbuilder.working_content);
-      tbuilder.transform_index++;
-      PerformTransformation(tbuilder);
-    }
-    return f;
-}
-
-
-
-function MakeSynonymCallback(carton_index, tbuilder){
-  callback = function(err, response, body){
-    var synonym_list = JSON.parse(body);
-    var synonym;
-    if(synonym_list.length > 1){
-      synonym = GetRandomElement(synonym_list.slice(1));
-    }
-    else{
-      synonym = synonym_list[0];
-    }
-    PutInCarton(tbuilder.carton, synonym ,carton_index, MakeSynonymDoneFunction(tbuilder));
-  }
-  return callback;
-}
-
-function MakeSynonymDoneFunction(tbuilder){
-    var f = function(){
-      console.log("done!");
-      tbuilder.working_content = tbuilder.carton.items;
-      console.log("after synonym: " + tbuilder.working_content);
-      tbuilder.transform_index++;
-      PerformTransformation(tbuilder);
-    }
-    return f;
-}
 
 
 
@@ -455,27 +237,75 @@ function Transform(chat_message){
   var mode = chat_message.transform_list[0];
   var text = chat_message.original_text;
 
-  transformer.Transform(
-    text,
-    {"mode": mode},
-    function(err,succ){
-      console.log(err);
-      console.log(succ);
-      var result;
-      if(mode === "Paraphrase"){
-        result = ParseParaphrased(succ);
+  if(mode === "Picture"){
+    chat_message.is_images = true;
+    io.emit("chat message", chat_message);
+    buffer.push(chat_message);
+  }
+  else if(mode === "Spanish"){
+    transformer.Transform(text,{"mode": "Translate", "from":"en", "to":"es"}, function(err,succ){
+        console.log(err);
+        console.log(succ);
+        var result = succ["text"];
+        chat_message.transformed_text = result;
+        io.emit("chat message", chat_message);
+        buffer.push(chat_message);
       }
-      if(mode === "Synonymize"){
-        result = ParseSmartSynonymize(succ);
+    )
+  }
+  else if(mode === "Antonymize"){
+    transformer.Transform(
+      text,
+      {"mode":"Synonymize","ant":true},
+      function(err,succ){
+        var result = {};
+        if(!err){
+          result = ParseSmartSynonymize(succ);
+          chat_message.transformed_text = result;
+          io.emit("chat message", chat_message);
+          buffer.push(chat_message);
+        }
+        else{
+          console.log(err);
+        }
       }
-      if(mode === "SmartSynonymize"){
-        result = ParseSmartSynonymize(succ);
+    );
+  }
+  else{
+    transformer.Transform(
+      text,
+      {"mode": mode},
+      function(err,succ){
+        console.log(err);
+        console.log(succ);
+        var result = succ;
+        if(mode === "Paraphrase"){
+          result = ParseParaphrased(succ);
+        }
+        if(mode === "Synonymize"){
+          result = ParseSmartSynonymize(succ);
+        }
+        if(mode === "SmartSynonymize"){
+          result = ParseSmartSynonymize(succ);
+        }
+        if(mode === "Picture"){
+          chat_message.image_url_lists = ParsePicture(succ);
+        }
+        chat_message.transformed_text = result;
+        io.emit("chat message", chat_message);
+        buffer.push(chat_message);
       }
-      chat_message.transformed_text = result;
-      io.emit("chat message", chat_message);
-      buffer.push(chat_message);
-    }
-  );
+    );
+  }
+
+}
+var ParsePicture = function(success){
+  var results = [];
+  success.forEach(function(set){
+    results.push(set["urls"]);
+  })
+  return results;
+  // chat_message.image_url_lists = succ;
 }
 
 var ParseParaphrased = function(success){
@@ -498,115 +328,6 @@ var ParseSmartSynonymize = function(success){
   );
   return result.trim();
 }
-
-function PutInCarton(carton, item, index, carton_full_function){
-  carton.items[index] = item;
-  carton.counter++;
-  console.log("carton: " + carton.counter + " / " + carton.max + ": ");
-  console.log(carton.items);
-  if(carton.counter >= carton.max){
-    carton_full_function();
-  }
-}
-function ToSynonym(text, callback){
-   const api_url = 'http://localhost:8286'
-  var GET_params = {
-    mode: "synonym",
-    word: text
-  };
-  var options = {
-    url: api_url,
-    qs: GET_params
-  }
-  request(
-    options, 
-    callback
-  );
-}
-
-function ToSmartSynonym(text, callback){
-   const api_url = 'http://localhost:8286'
-  var GET_params = {
-    mode: "smartsynonym",
-    sentence: text
-  };
-  var options = {
-    url: api_url,
-    qs: GET_params
-  }
-  request(
-    options, 
-    callback
-  );
-}
-
-function ToParaphrase(text, callback){
-  const api_url = 'http://localhost:8286'
-  // const args = "mode=translate&from=en&to=es&text="+text;
-  // const api_url = domain + "?" + args;
-  var GET_params = {
-    mode: "paraphrase",
-    search: text,
-    selector: "random"
-  };
-  var options = {
-    url: api_url,
-    qs: GET_params
-  }
-  request(
-    options, 
-    callback
-  );
-}
-
-function ToImageURLs(text, callback){
-  const api_url = 'http://localhost:8286'
-  // const args = "mode=translate&from=en&to=es&text="+text;
-  // const api_url = domain + "?" + args;
-  var GET_params = {
-    mode: "bing_image",
-    search: text
-  };
-  var options = {
-    url: api_url,
-    qs: GET_params
-  }
-  request(
-    options, 
-    callback
-  );
-}
-
-function ToSpanish(text, callback){
-
-  const api_url = 'http://localhost:8286'
-  // const args = "mode=translate&from=en&to=es&text="+text;
-  // const api_url = domain + "?" + args;
-  var GET_params = {
-    mode: "translate",
-    from: "en",
-    to: "es", 
-    text: text
-  };
-  var options = {
-    url: api_url,
-    qs: GET_params
-  }
-  request(
-    options, 
-    callback
-  );
-}
-
-
-
-
-
-
-
-
-
-
 
 
 
