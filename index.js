@@ -264,6 +264,17 @@ var ServerGoogleImagesCallback = function(chat_message){
   }
 }
 
+var PartsOfSpeechCallback = function(chat_message){
+  return function(err, response){
+    if(err){
+      console.log(err);
+    }else{
+      chat_message.transformed_text = response["penn_parts"].join(" ");
+      EmitChatMessage(chat_message);
+    }
+  }
+}
+
 function Transform(chat_message){
   var mode = chat_message.transform_list[0];
   var text = chat_message.original_text;
@@ -284,6 +295,13 @@ function Transform(chat_message){
       text,
       options,
       ServerBingImagesCallback(chat_message)
+    );
+  }
+  else if (mode === "PartsOfSpeech"){
+    transformer.PartOfSpeechify(
+      text,
+      options,
+      PartsOfSpeechCallback(chat_message)
     );
   }
   else if(mode === "Spanish"){

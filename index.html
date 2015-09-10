@@ -199,7 +199,7 @@ function FacebookLoggedInCallback() {
 
 
       function PopulateTransformDropdown(){
-        var options = ["None", "Synonymize", "Antonymize", "SmartSynonymize","Spanish","LocalGoogleImages", "Paraphrase", "ServerBingImages", "ServerGoogleImages",];
+        var options = ["None", "Synonymize", "Antonymize", "SmartSynonymize","Spanish","LocalGoogleImages", "Paraphrase", "ServerBingImages", "ServerGoogleImages", "PartsOfSpeech"];
         options.forEach(function(option){
           $("#transform_dropdown").append("<option value = " + option +">" + option + "</option>");
         });
