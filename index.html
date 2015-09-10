@@ -199,7 +199,7 @@ function FacebookLoggedInCallback() {
 
 
       function PopulateTransformDropdown(){
-        var options = ["None", "Synonymize", "Antonymize", "SmartSynonymize","Spanish","Picture", "Paraphrase"];
+        var options = ["None", "Synonymize", "Antonymize", "SmartSynonymize","Spanish","LocalGoogleImages", "Paraphrase", "ServerBingImages", "ServerGoogleImages",];
         options.forEach(function(option){
           $("#transform_dropdown").append("<option value = " + option +">" + option + "</option>");
         });
@@ -499,11 +499,50 @@ function FacebookLoggedInCallback() {
         words.forEach(function(word,index){
           img_containers[index] = $("<div>");
           img_containers[index].css('display','inline-block');
-          GoogleSearch(img_containers[index],word);
+          GoogleSearch(
+            img_containers[index],
+            word,
+            function(err,google_results){
+              var url_list = [];
+              google_results.forEach(function(result){
+                url_list.push(result.tbUrl);
+              });
+              img_containers[index].append(CombineImages(url_list));
+            }
+          );
           container.append(img_containers[index]);
         });
         ScrollDown();
       }
+
+      var AddImageMessageFromURLLists = function(container, url_lists){
+        url_lists.forEach(
+          function(url_list){
+            var cycling_images = CombineImages(url_list);
+            container.append(cycling_images);
+          }
+        );
+        ScrollDown();
+      }
+
+      var CombineImages = function(url_list){
+        var container = $("<div>");
+        url_list.forEach(
+          function(url){
+            var img = ResultImage(url);
+            container.append(img);
+            container.css('display','inline-block');
+          }
+        );
+        CycleThroughImages(container);
+        return container;
+      }
+
+       // var url = result.tbUrl;
+       //          var img = ResultImage(url)
+       //          container.append(img);
+       //         }
+       //         CycleThroughImages(container);
 
       var AddTextMessage = function(container, text){
         var text_container = $("<div>");
@@ -530,7 +569,12 @@ function FacebookLoggedInCallback() {
 
         var cont = container.find("[name='chatline_images']");
         if(chat_message.is_images){
-          AddImageMessage(cont,chat_message.original_text);
+          if(chat_message.image_url_lists){ // Server provides URLs
+            AddImageMessageFromURLLists(cont,chat_message.image_url_lists);
+          }
+          else{ // Locally get URLs
+            AddImageMessage(cont,chat_message.original_text);
+          }
         }
         else{
           AddTextMessage(cont,chat_message.transformed_text);
@@ -629,7 +673,7 @@ function FacebookLoggedInCallback() {
         container.css("width", new_width);
       }
 
-      function GoogleSearch(container, string){
+      var GoogleSearch = function(container, string, callback){
          // Create an Image Search instance.
         var my_search = new google.search.ImageSearch();
 
@@ -638,20 +682,23 @@ function FacebookLoggedInCallback() {
         my_search.setSearchCompleteCallback(
           this, 
           function(){
-            if (my_search.results && my_search.results.length > 0) {
-              // Loop through our results, printing them to the page.
-              var results = my_search.results;
-              var container = my_search.destination_container;
-               for (var i = 0; i < results.length; i++) {
-                var result = results[i];
-                var url = result.tbUrl;
-                var img = ResultImage(url)
-                container.append(img);
-               }
-               CycleThroughImages(container);
-            }
-          },
-          null
+            callback(null,my_search.results);
+          }
+          // function(){
+          //   if (my_search.results && my_search.results.length > 0) {
+          //     // Loop through our results, printing them to the page.
+          //     var results = my_search.results;
+          //     var container = my_search.destination_container;
+          //      for (var i = 0; i < results.length; i++) {
+          //       var result = results[i];
+          //       var url = result.tbUrl;
+          //       var img = ResultImage(url)
+          //       container.append(img);
+          //      }
+          //      CycleThroughImages(container);
+          //   }
+          // },
+          // null
         );
 
         my_search.setResultSetSize(8);

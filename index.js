@@ -209,6 +209,9 @@ function TooManyUsers(){
 function OnChatMessage(chat_message){
     console.log(chat_message);
     chat_message = JSON.parse(JSON.stringify(chat_message));
+    if(IsDirectedAtBot(chat_message)){
+      EmitChatbotResponseToAll(chat_message.original_text);
+    }
     Transform(chat_message);
 }
 
@@ -228,19 +231,60 @@ function GetRandomElement(array){
 
 
 
+var EmitChatMessage = function(chat_message){
+  io.emit("chat message", chat_message);
+  buffer.push(chat_message);
+}
 
+var EmitImageChatMessage = function(chat_message){
+  chat_message.is_images = true;
+  EmitChatMessage(chat_message);
+}
+
+
+var ServerBingImagesCallback = function(chat_message){
+  return function(err, response){
+    if(err){
+      console.log(err);
+    }else{
+      chat_message.image_url_lists = ParseImageSet(response);
+      EmitImageChatMessage(chat_message);
+    }
+  }
+}
+
+var ServerGoogleImagesCallback = function(chat_message){
+  return function(err, response){
+    if(err){
+      console.log(err);
+    }else{
+      chat_message.image_url_lists = ParseImageSet(response);
+      EmitImageChatMessage(chat_message);
+    }
+  }
+}
 
 function Transform(chat_message){
-
-  // chat_message.transform_list.forEach
-
   var mode = chat_message.transform_list[0];
   var text = chat_message.original_text;
+  var options = {};
 
-  if(mode === "Picture"){
-    chat_message.is_images = true;
-    io.emit("chat message", chat_message);
-    buffer.push(chat_message);
+  if(mode === "LocalGoogleImages"){
+    EmitImageChatMessage(chat_message);
+  }
+  else if(mode === "ServerGoogleImages"){
+    transformer.GoogleImages(
+      text, 
+      options, 
+      ServerGoogleImagesCallback(chat_message)
+    );
+  }
+  else if (mode === "ServerBingImages"){
+    transformer.BingImages(
+      text,
+      options,
+      ServerBingImagesCallback(chat_message)
+    );
   }
   else if(mode === "Spanish"){
     transformer.Transform(text,{"mode": "Translate", "from":"en", "to":"es"}, function(err,succ){
@@ -288,9 +332,6 @@ function Transform(chat_message){
         if(mode === "SmartSynonymize"){
           result = ParseSmartSynonymize(succ);
         }
-        if(mode === "Picture"){
-          chat_message.image_url_lists = ParsePicture(succ);
-        }
         chat_message.transformed_text = result;
         io.emit("chat message", chat_message);
         buffer.push(chat_message);
@@ -299,13 +340,12 @@ function Transform(chat_message){
   }
 
 }
-var ParsePicture = function(success){
+var ParseImageSet = function(success){
   var results = [];
   success.forEach(function(set){
     results.push(set["urls"]);
   })
   return results;
-  // chat_message.image_url_lists = succ;
 }
 
 var ParseParaphrased = function(success){
@@ -335,26 +375,9 @@ var ParseSmartSynonymize = function(success){
 
 
 
-
-
-
-
-
-function OnSplittableMessage(unsplit_chat_message){
-  var strings = unsplit_chat_message.original_text.split(/\s+/);
-  console.log("unsplit: " + unsplit_chat_message.original_text);
-  for(var index in strings){
-    var string = strings[index];
-    console.log("STRING: " + string);
-    var chat_message = JSON.parse(JSON.stringify(unsplit_chat_message));
-    chat_message.original_text = string;
-    OnChatMessage(chat_message);
-  }
-}
-
 function IsDirectedAtBot(unsplit_chat_message){
   var result = false;
-  if(unsplit_chat_message.directed_at_bot){
+  if(unsplit_chat_message.target === "Everyone"){
     result = true;
   }
   return result;
@@ -420,9 +443,14 @@ function EmitChatbotResponseToAll(message){
         msg: bot_text,
         timestamp: new Date().getTime(),
         author_name: "Chatbot Lauren",
-        author_id: BOTID
+        author_id: BOTID,
+        transform_list: ["None"],
+        taget: "Humans",
+        original_text: bot_text,
+        is_images: false,
       }
-      OnSplittableMessage(chatbot_chat_message);
+
+      OnChatMessage(chatbot_chat_message);
     });
   }).on('error', function(e) {
       console.log("PB GET Got error: ", e);

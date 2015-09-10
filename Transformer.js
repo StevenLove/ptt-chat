@@ -5,12 +5,14 @@ var Transformer = function(){
   var http = require('http');
   var querystring = require('querystring');
   var request = require('request');
-  var googleimages = require('google-images');
+  // var googleimages = require('google-images');
   var WordNet = require('node-wordnet');
-  var Bing = require('node-bing-api')({ accKey:"***REMOVED***"});
+  // var Bing = require('node-bing-api')({ accKey:"***REMOVED***"});
 
   var async = require('async');
 
+  var ImageSearch = require('./ImageSearch.js');
+  var image_search = new ImageSearch();
 
   var ms_translate = require('./ms_translate.js');
   var translation_client_secret = "***REMOVED***";
@@ -54,10 +56,13 @@ var Transformer = function(){
         f = Paraphrase;
         break;
       case "Picture":
-        f = BingImage;
+        f = self.GoogleImages;
         break;
-      case "GoogleImage":
-        f = GoogleImage;
+      case "GoogleImages":
+        f = self.GoogleImages;
+        break;
+      case "BingImages":
+        f = self.BingImages;
         break;
       case "Synonymize":
         f = Synonymize;
@@ -93,103 +98,28 @@ var Transformer = function(){
     );
   }
 
-  var ParseBingResponse = function(body){
-    var results = body["d"]["results"];
-    var thumb_urls = [];
-    results.forEach(function(result, index){
-      var thumb_url = result.Thumbnail.MediaUrl;
-      thumb_urls.push(thumb_url);
-    });
-    return thumb_urls;
+  var LogAndPassCallback = function(callback){
+    return function(err, succ){
+      console.log("ERRORS: " + JSON.stringify(err));
+      console.log("RESULT: " + JSON.stringify(succ));
+      callback(err,succ);
+    }
   }
 
-
-  var BingImageShort = function(text, options, callback){
-    var bing_options =  {top: 3, market: 'en-US'};
-    Bing.images(
+  self.BingImages = function(text, options, callback){
+    image_search.BingImages(
       text,
-      bing_options,
-      function(error, bing_response, body){
-        var success = {};
-        if(!error){
-          success["urls"] = ParseBingResponse(body);
-        }
-        callback(error,success);
-      }
+      options,
+      LogAndPassCallback(callback)
     );
   }
 
-  var ApplyToList = function(fn, array, options, callback){
-    var result = [];
-    async.forEachOf(
-      array,
-      function(item, index, cb){
-        fn(
-          item,
-          options,
-          function(i){
-            return function(err,succ){
-              if(err){
-                console.log(err);
-              }
-              else{
-                result[i] = succ;
-              }
-              cb();
-              // callback(err,succ);
-            }
-          }(index)
-        );
-      },
-      function(err){
-        // console.log(result);
-        callback(err,result);
-      }
-    );
-  }
-
- var BingImage = function (text, options, callback){
-   ApplyToList(BingImageShort, text.split(" "), options, callback);
- }
-
-  var GoogleSearchPage = function(text, page_num, callback){
-    googleimages.search({
-      "for": text, 
-      "page": page_num, 
-      "callback": function (err, images) {
-        var success = {};
-        if(!err){
-          success = ParseGoogleImageResponse(images);
-        }
-        callback(err,success);
-      }
-    });
-  }
-
-  var ParseGoogleImageResponse = function(images){
-    return images.map(function(image){
-          return image.url;
-        });
-  }
-
-  var FlattenArrayOnce = function(array){
-    var merged = [];
-    merged = merged.concat.apply(merged,array);
-    return merged;
-  }
-
-  var GoogleImage = function(text, options, callback){
-    async.parallel(
-      [
-        async.apply(GoogleSearchPage, text, 0),
-        async.apply(GoogleSearchPage, text, 4)
-      ],
-      function(err, results){
-        if(!err){
-          results = FlattenArrayOnce(results);
-        }
-        callback(err,results);
-      }
+  self.GoogleImages = function(text, options, callback){
+    console.log("GoogleImages called in Transformer.js");
+    image_search.GoogleImages(
+      text,
+      options,
+      LogAndPassCallback(callback)
     );
   }
 
