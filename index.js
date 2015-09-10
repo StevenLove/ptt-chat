@@ -269,7 +269,13 @@ var PartsOfSpeechCallback = function(chat_message){
     if(err){
       console.log(err);
     }else{
-      chat_message.transformed_text = response["penn_parts"].join(" ");
+      chat_message.transformed_text = 
+      response.map(
+        function(tagged_word){
+          return tagged_word["penn_pos"];
+        }
+      ).join(" ");
+      
       EmitChatMessage(chat_message);
     }
   }

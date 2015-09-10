@@ -1,3 +1,10 @@
+// learn about javascript prototyping
+// maybe I should have many instances of synonymizers
+// as long as i only duplicate what is stored like the options
+// this came up because i was wondering if options should be STATE of the obj
+// so I don't have to pass it up and down everything.
+// otherwise I probably want to combine text into options
+
 var Synonymizer = function(){
   var self = this;
   var async = require('async');
@@ -46,8 +53,12 @@ var Synonymizer = function(){
   // ant: only antonyms will be returned
   var ApplySynonymizeOptions = function(body, options){
     var results = [];
-    if(body){ body = JSON.parse(body); } 
-    else{ return []; }
+    if(body){
+      body = JSON.parse(body);
+    } 
+    else{
+      return [];
+    }
     if(options.raw){
       results = body;
       return results;
@@ -90,10 +101,135 @@ var Synonymizer = function(){
     );
   }
 
+
+// [
+//   {"word": w, "penn": x, "lay": y}
+//   ,{}
+//   ,{}
+//   ,...
+// ]
+
+  var GenerateTaggedWordOptions = function(tagged_word, preset_options){
+    var options = Clone(preset_options);
+    options["pos"] = tagged_word["lay_pos"];
+    return options;
+  }
+
+  // Smart Synonymize one word
+  var SmartSynonymizeShort = function(tagged_word, options, callback){
+
+  }
+
+  function GetSynonymLists(tagged_words, options, callback){
+    // Build a skeleton of the results, missing the lists of synonyms
+    var result = {"words": 
+      tagged_words.map(
+        function(tagged_word){
+          return {"original": tagged_word["word"]};
+        }
+      )
+    };
+    // Get an array of outputs from ShortSynonymize, one for each tagged_word
+    async.map(
+      tagged_words,
+      function(tagged_word, async_cb){
+        ShortSynonymize(
+          tagged_word["word"],
+          GenerateTaggedWordOptions(tagged_word, options),
+          function(err, response){
+            async_cb(err,response);
+          }
+        );
+      },
+      // Stick those responses in the results skeleton and call back
+      function(err, response){ //async_cb
+        console.log("result: " + JSON.stringify(result));
+        response.forEach(function(list,index){
+          result["words"][index]["list"] = list;
+        });
+        callback(err, result);
+      }
+    )
+  }
+
+  var SmartSynonymize = function(text, options, output_callback){
+    async.waterfall(
+      [
+        async.apply(PartOfSpeechify, text, options),
+        function(sentence, callback) {
+            GetSynonymLists(sentence, options, callback);
+        }
+      ],
+      function(err, result){
+        output_callback(err,result);
+      }
+    );
+  }
+
+
+  /* Part of Speech */
+
+  var PartOfSpeechify = function(text, options, callback){
+    ConsumePartOfSpeechAPI(
+      text,
+      function(err, response, body){
+        console.log(body);
+        var success = {};
+        if(!err){
+          var sentence = ParseTextProcessingAPI(body);
+          success = sentence;
+        }
+        callback(err,success);
+      }
+    );
+  }
+
+  function ConsumePartOfSpeechAPI(text, callback){
+    const api_url = "http://text-processing.com/api/tag/";
+    const params = querystring.stringify({
+      'text': text,
+      'output': "tagged"
+    });
+    const options = {
+      url: api_url,
+      body: params
+    }
+    request.post(options,callback);
+  }
+
+  // Convert the API response into text, and parse that text
+  var ParseTextProcessingAPI = function(body){
+    var obj = JSON.parse(body);
+    var tagged_text = obj["text"];
+    return ParsePartOfSpeechTaggedText(tagged_text);
+  }
+
+  // Parse POS tagged text into three corresponding arrays of
+  // words: the original tokens split on whitespace
+  // penn_parts: the abbreviation of the POS attributed to that token
+  // lay_parts: a fuller description of the POS attributed to that token
+  function ParsePartOfSpeechTaggedText(text){
+  // "This/DT is/VBZ a/DT sample/NN input/NN ./.. There/EX might/MD be/VB two/CD sentences/NNS ./.. And/CC even/RB a/DT misspellign/NN ?/."
+    var tokens = text.split(" ");
+    var tagged_words = [];
+    tokens.forEach(function(token){
+      var sides_of_slash = token.split("/");
+      var word = sides_of_slash[0];
+      var penn = sides_of_slash[1];
+      tagged_words.push({
+        "word":word, 
+        "penn_pos":penn,
+        "lay_pos":ToLayPartOfSpeech(penn)
+      });
+    });
+    return tagged_words;
+  }
+
+  // Convert three-letter-acronyms for Penn part-of-speech tagging into more general terms like 'verb', 'noun', 'adverb', and 'adjective'.
+  // Using http://cs.nyu.edu/grishman/jet/guide/PennPOS.html as a guide
   function ToLayPartOfSpeech(penn_pos){
     var result;
     var first_two = penn_pos.slice(0,2);
-
     if(first_two ==="VB"){
       result = "verb";
     }
@@ -112,113 +248,7 @@ var Synonymizer = function(){
     return result;
   }
 
-  var ParseTextProcessingAPI = function(body){
-    var obj = JSON.parse(body);
-    var tagged_text = obj["text"];
-    return ParsePartOfSpeechTaggedText(tagged_text);
-  }
 
-  function ParsePartOfSpeechTaggedText(text){
-  // "This/DT is/VBZ a/DT sample/NN input/NN ./.. There/EX might/MD be/VB two/CD sentences/NNS ./.. And/CC even/RB a/DT misspellign/NN ?/."
-    var words = [];
-    var penn_parts = [];
-    var tokens = text.split(" ");
-    tokens.forEach(function(token){
-      var sidesOfSlash = token.split("/");
-      words.push(sidesOfSlash[0]);
-      penn_parts.push(sidesOfSlash[1]);
-    });
-    var lay_parts = penn_parts.map(function(penn_part){
-      return ToLayPartOfSpeech(penn_part);
-    })
-    return { "words": words,
-      "penn_parts": penn_parts,
-      "lay_parts": lay_parts };
-  }
-
-  function ConsumePartOfSpeechAPI(text, callback){
-    const api_url = "http://text-processing.com/api/tag/";
-    const params = querystring.stringify({
-      'text': text,
-      'output': "tagged"
-    });
-    const options = {
-      url: api_url,
-      body: params
-    }
-    request.post(options,callback);
-  }
-
-  var PartOfSpeechify = function(text, options, callback){
-    ConsumePartOfSpeechAPI(
-      text,
-      function(err, response, body){
-        console.log(body);
-        var success = {};
-        if(!err){
-          var sentence = ParseTextProcessingAPI(body);
-          success = sentence;
-        }
-        callback(err,success);
-      }
-    );
-  }
-
-
-  function GetSynonymLists(sentence, options, callback){
-    var synonym_lists = [];
-    var count_current = 0;
-    var count_total = sentence.words.length;
-    var result = {"words": []};
-    var synonym_options_list = [];
-    async.forEachOf(
-      sentence.words,
-      function(word, index, cb){
-        var lay_part = sentence.lay_parts[index];
-        synonym_options_list[index] = Clone(options);
-        synonym_options_list[index]["pos"] = lay_part;
-        synonym_options_list[index]["text"] = word;
-        ShortSynonymize(
-          word,
-          synonym_options_list[index],
-          function(err, success){
-            if(err){
-              cb(err);
-            }
-            else{
-              synonym_lists[index] = success;
-            }
-            cb();
-          }
-        );
-      },
-      function(err){
-        sentence.words.forEach(function(word,index){
-          result["words"][index] = {};
-          result["words"][index]["original"] = word;
-          result["words"][index]["list"] = synonym_lists[index];
-        });
-        callback(err,result);
-      }
-    );
-  }
-
-  // make this less verbose
-  var SmartSynonymize = function(text, options, output_callback){
-    async.waterfall(
-      [
-        function(callback) {
-            PartOfSpeechify(text, options, callback);
-        },
-        function(sentence, callback) {
-            GetSynonymLists(sentence, options, callback);
-        }
-      ],
-      function(err, result){
-        output_callback(err,result);
-      }
-    );
-  }
 
   /* Helpers */
 
