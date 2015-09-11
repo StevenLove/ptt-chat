@@ -25,6 +25,9 @@ var Transformer = function(){
   var Synonymizer = require('./Synonymizer.js');
   var synonymizer = new Synonymizer();
 
+  var PartOfSpeecher = require('./PartOfSpeecher.js');
+  var part_of_speecher = new PartOfSpeecher();
+
   const NO_ERROR = null;
   const NO_RETURN = null;
 
@@ -148,7 +151,7 @@ var Transformer = function(){
   }
 
   self.PartOfSpeechify = function(text, options, callback){
-    synonymizer.PartOfSpeechify(
+    part_of_speecher.PartOfSpeechify(
       text,
       options,
       LogAndPassCallback(callback)
