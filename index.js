@@ -275,9 +275,17 @@ var PartsOfSpeechCallback = function(chat_message){
           return tagged_word["penn_pos"];
         }
       ).join(" ");
-      
       EmitChatMessage(chat_message);
     }
+  }
+}
+
+var TranslatedCallback = function(chat_message){
+  return function(err, response){
+    var result = response["text"];
+    chat_message.transformed_text = result;
+    io.emit("chat message", chat_message);
+    buffer.push(chat_message);
   }
 }
 
@@ -310,16 +318,19 @@ function Transform(chat_message){
       PartsOfSpeechCallback(chat_message)
     );
   }
+  else if (mode === "Scotranslate"){
+    transformer.Scotranslate(
+      text,
+      options,
+      TranslatedCallback(chat_message)
+    );
+  }
   else if(mode === "Spanish"){
-    transformer.Transform(text,{"mode": "Translate", "from":"en", "to":"es"}, function(err,succ){
-        console.log(err);
-        console.log(succ);
-        var result = succ["text"];
-        chat_message.transformed_text = result;
-        io.emit("chat message", chat_message);
-        buffer.push(chat_message);
-      }
-    )
+    transformer.Transform(
+      text,
+      {"mode": "Translate", "from":"en", "to":"es"},
+      TranslatedCallback(chat_message)
+    );
   }
   else if(mode === "Antonymize"){
     transformer.Transform(
