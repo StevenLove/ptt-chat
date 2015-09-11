@@ -2,6 +2,7 @@ var PartOfSpeecher = function(){
   var querystring = require('querystring');
   var request = require('request');
 
+  
 
   var PartOfSpeechify = function(text, options, callback){
     ConsumePartOfSpeechAPI(

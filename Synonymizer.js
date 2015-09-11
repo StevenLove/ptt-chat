@@ -14,36 +14,30 @@ var Synonymizer = function(){
 
   /* Exposed Functions */
 
-
-
   var Synonymize = function(sentence, options, callback){
-    var words = GenerateWordItems(sentence);
-    SynonymizeWordItemList(words,options,callback);
+    var words = GenerateWordItems(sentence,options);
+    SynonymizeWordItemList(words,callback);
   }
 
   var SmartSynonymize = function(text, options, output_callback){
-    console.log(part_of_speecher);
     async.waterfall(
       [
         async.apply(part_of_speecher.PartOfSpeechify, text, options),
-        function(sentence, callback) {
-            SynonymizeWordItemList(sentence, options, callback);
-        }
+        async.asyncify(ConvertTaggedWordsToWordItems),
+        async.apply(SynonymizeWordItemList)
       ],
       output_callback
     );
   }
 
-
   /* Successive Layers of Callbacks */
 
-  var SynonymizeWordItemList = function(word_items, options, callback){
+  var SynonymizeWordItemList = function(word_items, callback){
     async.map(
       word_items,
       function(word_item, async_cb){
         SynonymizeWordItem(
           word_item,
-          options,
           async_cb
         );
       },
@@ -53,53 +47,52 @@ var Synonymizer = function(){
     );
   }
 
-  var SynonymizeWordItem = function(word_item, options, callback){
-   SynonymizeRawWord(
-      word_item["word"],
-      GenerateOptionsFromWordItem(word_item, options),
-      function(err, response){
-        var result = GenerateResultFromWordItem(word_item,response)
-        callback(err, result);
-      }
-    );
-  }
-
-  var SynonymizeRawWord = function(word, options, callback){
-    console.log("Synonymizing " + word + " with options " + JSON.stringify(options));
+  var SynonymizeWordItem = function(word_item, callback){
+    console.log("Synonymizing " + word_item["word"] + " with options " + JSON.stringify(word_item["options"]));
     ConsumeBigHugeSynonymAPI(
-      word,
+      word_item["word"],
       function(err, response, body){
         var result = {};
         if(!err){
-          result = ParseBody(body,options);
+          list = ParseBody(body,word_item["options"]);
+          result = GenerateResultFromWordItem(word_item,list);
         }
         callback(err,result);
       }
     );
   }
 
-  /* Internal Format of Input*/
+  /* Parsing the Input*/
 
-  var GenerateWordItems = function(text){
+  var ConvertTaggedWordsToWordItems = function(tagged_words){
+    tagged_words.forEach(function(word){
+      word["options"] = {};
+    });
+    return tagged_words;
+  }
+
+  var GenerateWordItems = function(text, options){
     return text.split(" ").map(function(raw_word){
-      return WordItem(raw_word);
+      return WordItem(raw_word, options);
     });
   }
 
-  var WordItem = function(text, penn_pos){
-    var item = {"word": text};
+  var WordItem = function(text, options, penn_pos){
+    var item = {"word": text, "options": options};
     if(penn_pos){
       item["tagged"] = true;
       item["penn_pos"] = penn_pos;
       item["lay_pos"] = ToLayPartOfSpeech(penn_pos);
+      item["options"]["pos"] = ToLayPartOfSpeech(penn_pos);
     }
     return item;
   }
 
-  var GenerateOptionsFromWordItem = function(word_item, preset_options){
-    var options = Clone(preset_options);
-    options["pos"] = word_item["lay_pos"];
-    return options;
+  var GenerateOptionsFromWordItem = function(word_item){
+    // var options = Clone(preset_options);
+    // options["pos"] = word_item["lay_pos"];
+    // return options;
+    return word_item["options"];
   }
 
   var GenerateResultFromWordItem = function(word_item, list){
@@ -109,7 +102,7 @@ var Synonymizer = function(){
     };
   }
 
-  /* Parsing the API */
+  /* Parsing the API Output */
 
   // raw: just return the output of the bighugethesaurus API
   // pos: only words in this part of speech will be returned
@@ -183,86 +176,6 @@ var Synonymizer = function(){
       callback
     );
   }
-
-  /* Part of Speech */
-
-  // var PartOfSpeechify = function(text, options, callback){
-  //   ConsumePartOfSpeechAPI(
-  //     text,
-  //     function(err, response, body){
-  //       var success = {};
-  //       if(!err){
-  //         var sentence = ParseTextProcessingAPI(body);
-  //         success = sentence;
-  //       }
-  //       callback(err,success);
-  //     }
-  //   );
-  // }
-
-  //   // Convert the API response into text, and parse that text
-  // var ParseTextProcessingAPI = function(body){
-  //   var obj = JSON.parse(body);
-  //   var tagged_text = obj["text"];
-  //   return ParsePartOfSpeechTaggedText(tagged_text);
-  // }
-
-  // function ConsumePartOfSpeechAPI(text, callback){
-  //   const api_url = "http://text-processing.com/api/tag/";
-  //   const params = querystring.stringify({
-  //     'text': text,
-  //     'output': "tagged"
-  //   });
-  //   const options = {
-  //     url: api_url,
-  //     body: params
-  //   }
-  //   request.post(options,callback);
-  // }
-
-  // // Parse POS tagged text into three corresponding arrays of
-  // // words: the original tokens split on whitespace
-  // // penn_parts: the abbreviation of the POS attributed to that token
-  // // lay_parts: a fuller description of the POS attributed to that token
-  // function ParsePartOfSpeechTaggedText(text){
-  // // "This/DT is/VBZ a/DT sample/NN input/NN ./.. There/EX might/MD be/VB two/CD sentences/NNS ./.. And/CC even/RB a/DT misspellign/NN ?/."
-  //   var tokens = text.split(" ");
-  //   var tagged_words = [];
-  //   tokens.forEach(function(token){
-  //     var sides_of_slash = token.split("/");
-  //     var word = sides_of_slash[0];
-  //     var penn = sides_of_slash[1];
-  //     tagged_words.push({
-  //       "word":word, 
-  //       "penn_pos":penn,
-  //       "lay_pos":ToLayPartOfSpeech(penn)
-  //     });
-  //   });
-  //   return tagged_words;
-  // }
-
-  // // Convert three-letter-acronyms for Penn part-of-speech tagging into more general terms like 'verb', 'noun', 'adverb', and 'adjective'.
-  // // Using http://cs.nyu.edu/grishman/jet/guide/PennPOS.html as a guide
-  // function ToLayPartOfSpeech(penn_pos){
-  //   var result;
-  //   var first_two = penn_pos.slice(0,2);
-  //   if(first_two ==="VB"){
-  //     result = "verb";
-  //   }
-  //   else if( first_two ==="NN"){
-  //     result = "noun";
-  //   }
-  //   else if(first_two == "RB" || penn_pos === "WRB"){
-  //     result = "adverb";
-  //   }
-  //   else if(first_two == "JJ"){
-  //     result = "adjective";
-  //   }
-  //   else{
-  //     result = "other";
-  //   }
-  //   return result;
-  // }
 
   /* Helpers */
 
