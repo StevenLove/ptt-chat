@@ -1,3 +1,19 @@
+// Usage: 
+//   Instantiation: 
+//     var ParaphraserFactory = require('idilia_paraphrase.js');
+//     var idilia_key = "NotARealKeyRxCwmmwczolRNotARealKey";
+//     var paraphraser = new ParaphraserFactory(idilia_key);
+//   Parameter Setting (optional):
+//     paraphraser.params.minWeight=0.5;
+//     etc.
+//   Invocation:
+//     paraphraser.Paraphrase(text, callbackfn);
+//   Parameters:
+//     text: A Sentence or Phrase to be paraphrased
+//     callbackfn: A function with two parameters
+//       err: {status: x, message: y}
+//       success: {text: x}
+
 var idilia_paraphrase = function(key){
   var request = require('request');
   var async = require('async');
