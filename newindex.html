@@ -339,7 +339,7 @@ function FacebookLoggedInCallback() {
       
 
       function ScrollDown(){
-        var div = $("#messages_container");
+        var div = $("#messages");
         var height = div.prop("scrollHeight");
         div.scrollTop(height);
       }
@@ -427,36 +427,9 @@ function FacebookLoggedInCallback() {
       }
 
       var GenerateMsgHTML = function(){
-         var msg = $("<div name='msg' class='col-xs-9' style='background-color:red;'></div>");
+         var msg = $("<div name='msg' class='col-xs-9'></div>");
          return msg;
       }
-
-      // function ChatLine(chat_message){
-      //   var container = $('<li class="clearfix">');
-      //   var line = $('<div name = "line">');
-      //   var content = $('<div name = "content">');
-      //   container.append(line);
-      //   var label = Label(chat_message);
-      //   var images = $('<div name="chatline_images" class="col-xs-10">').css('display','inline-block');
-
-      //   if(ISaid(chat_message)){
-      //     line.append(label);
-      //     line.append(images);
-      //   }
-      //   else{
-      //     // line.append($("<div class='col-md-2'>"));
-      //     line.append(label);
-      //     line.append(images);
-      //     // line.append(images).css("float","left");
-      //     // line.append(label).css("float","right");
-      //     // line.css("float","right");
-      //   }
-
-      //   // container.append($("<div>").attr("class","clearfix"));
-      //   container.attr("name",chat_message.author_id);
-      //   // return container;
-      //   return GenerateNewMessageLine();
-      // }
 
       function ISaid(chat_message){
         var my_id = GetMyID();
@@ -556,37 +529,6 @@ function FacebookLoggedInCallback() {
         return msg;
       }
 
-      // var AddImageMessage = function(container, text){
-      //   var words = text.split(" ");
-      //   var img_containers = [];
-      //   words.forEach(function(word,index){
-      //     img_containers[index] = $("<div>");
-      //     img_containers[index].css('display','inline-block');
-      //     GoogleSearch(
-      //       word,
-      //       function(err,google_results){
-      //         var url_list = [];
-      //         google_results.forEach(function(result){
-      //           url_list.push(result.tbUrl);
-      //         });
-      //         img_containers[index].append(CombineImages(url_list));
-      //       }
-      //     );
-      //     container.append(img_containers[index]);
-      //   });
-      //   ScrollDown();
-      // }
-
-      // var AddImageMessageFromURLLists = function(container, url_lists){
-      //   url_lists.forEach(
-      //     function(url_list){
-      //       var cycling_images = CombineImages(url_list);
-      //       container.append(cycling_images);
-      //     }
-      //   );
-      //   ScrollDown();
-      // }
-
       var CombineImages = function(url_list){
         var container = $("<div>");
         url_list.forEach(
@@ -600,19 +542,6 @@ function FacebookLoggedInCallback() {
         return container;
       }
 
-       // var url = result.tbUrl;
-       //          var img = ResultImage(url)
-       //          container.append(img);
-       //         }
-       //         CycleThroughImages(container);
-
-      // var AddTextMessage = function(container, text){
-      //   var text_container = $("<div>");
-      //   text_container.text(text);
-      //   container.append(text_container);
-      //   ScrollDown();
-      // }
-
       function ChatMessageContainer(chat_message){
         // var cur_author = chat_message.author_id;
         var prev_container = $("#messages").children().last();
@@ -625,24 +554,11 @@ function FacebookLoggedInCallback() {
         else{
           container = GenerateNewMessageLine();//chat_message);
           $("#messages").append(container);
+          container.append(Label(chat_message));
         }
         document.prev_chat_message = chat_message;
 
-
-        // var cont = container.find("[name='chatline_images']");
-        // if(chat_message.is_images){
-        //   if(chat_message.image_url_lists){ // Server provides URLs
-        //     AddImageMessageFromURLLists(cont,chat_message.image_url_lists);
-        //   }
-        //   else{ // Locally get URLs
-        //     AddImageMessage(cont,chat_message.original_text);
-        //   }
-        // }
-        // else{
-        //   AddTextMessage(cont,chat_message.transformed_text);
-        // }
-
-        container.append(Label(chat_message));
+        
         container.append(Msg(chat_message));
         ScrollDown();
 

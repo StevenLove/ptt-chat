@@ -52,8 +52,21 @@ var Transformer = function(){
     });
   }
 
+  String.prototype.hashCode = function(){
+      var hash = 0;
+      if (this.length == 0) return hash;
+      for (i = 0; i < this.length; i++) {
+          char = this.charCodeAt(i);
+          hash = ((hash<<5)-hash)+char;
+          hash = hash & hash; // Convert to 32bit integer
+      }
+      return hash;
+  }
+
+
+
   self.Transform = function(text, options, callback){
-    console.log("TRANSFORM");
+    console.log("PERFORMING TRANSFORM");
     console.log("  " + text);
     console.log("  " + JSON.stringify(options));
     var f;
@@ -64,16 +77,16 @@ var Transformer = function(){
       case "Paraphrase":
         f = Paraphrase;
         break;
-      case "Picture":
+      case "Picture": // each word
         f = self.GoogleImages;
         break;
-      case "GoogleImages":
+      case "GoogleImages": // each word
         f = self.GoogleImages;
         break;
-      case "BingImages":
+      case "BingImages": // each word
         f = self.BingImages;
         break;
-      case "Synonymize":
+      case "Synonymize": // each word
         f = self.Synonymize;
         break;
       case "PartsOfSpeech":
@@ -82,7 +95,7 @@ var Transformer = function(){
       case "SmartSynonymize":
         f = self.SmartSynonymize;
         break;
-      case "Scots":
+      case "Scots": // each word
         f = self.Scots;
         break;
       default :
@@ -92,6 +105,17 @@ var Transformer = function(){
     }
     f(text,options,callback);
   }
+
+  self.Transform = async.memoize(
+    self.Transform,
+    function(text,options){
+      var str = options.mode+":"+text;
+      var hash = str.hashCode();
+      console.log(str + " hashed to " + hash);
+      return hash;
+    }
+  );
+
   var DoNothing = function(text, options, callback){
     callback(null,text);
   }
@@ -165,9 +189,6 @@ var Transformer = function(){
   }
 
   self.Scotranslate = scots_translator.Translate;
-  // self.Scots =function(text, options, callback){
-  //   scots_translator.Translate(text,options,callback);
-  // }
 
   /* Helpers */
 

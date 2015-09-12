@@ -1,6 +1,9 @@
 var ScotsTranslator = function(){
   var request = require('request');
   var querystring = require('querystring');
+  var async = require('async');
+
+
 
   var Translate = function(text, options, callback){
     ConsumeScoTranslateAPI(
@@ -14,6 +17,39 @@ var ScotsTranslator = function(){
       }
     );
   }
+
+  var MemoizedTranslate = async.memoize(
+    Translate,
+    function(text,options){
+      var str = options.mode+":"+text;
+      var hash = str.hashCode();
+      console.log(str + " hashed to " + hash);
+      return hash;
+    }
+  );
+
+  var MemoizedTranslateOneAtATime = function(text, options, callback){
+    var words = text.split(" ");
+    var translated = [];
+    async.forEachOf(
+      words,
+      function(word,index,async_cb){
+        MemoizedTranslate(
+          word,
+          options,
+          function(err, result){
+            translated[index] = result["text"];
+            async_cb();
+          }
+        );
+      },
+      function(err){ //async_cb
+        if(err) console.error(err);
+        callback(err,CreateReturnObject(translated.join("")));
+      }  
+    );
+  }
+
 
   var ConsumeScoTranslateAPI = function(text, callback){
     var url = "http://www.scotranslate.com/Translation/Translate";
@@ -44,7 +80,11 @@ var ScotsTranslator = function(){
 
   var GenerateReturnObject = function(body){
     var translated = ParseAPIBody(body);
-    return {"text": translated};
+    return CreateReturnObject(translated);
+  }
+
+  var CreateReturnObject = function(translated_text){
+    return {"text": translated_text};
   }
 
   /* Helpers */
@@ -56,6 +96,6 @@ var ScotsTranslator = function(){
     }
   }
 
-  this.Translate = Translate;
+  this.Translate = MemoizedTranslateOneAtATime;
 }
 module.exports = ScotsTranslator;
