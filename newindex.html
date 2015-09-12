@@ -1,129 +1,137 @@
-<!doctype html>
-<html>
-  <head>
-    <title>Socket.IO chat</title>
-    <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { font: 13px Helvetica, Arial; }
-      #controls{ background:wheat; padding: 3px; position: fixed; bottom: 0; width: 100%; height: 120px;}
-      form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
-      form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
-      #messages { list-style-type: none; margin: 0; padding: 0;}
-      #messages li { padding: 5px 10px; }
-      #messages li:nth-child(odd) { background: #eee; }
-      #messages li:nth-child(even) { background: #ddd;}
+<!DOCTYPE html>
+<html lang="en">
 
-      html, body{
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Simple Sidebar - Start Bootstrap Template</title>
+
+    <!-- Bootstrap Core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link href="css/simple-sidebar.css" rel="stylesheet">
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <style>
+      html,body,#wrapper,#page-content-wrapper,#wrapper2{
+        background-color:gray;
         height:100%;
+      }
+      #messages {
+        background-color: lightblue;
+        height: 80%;
+        overflow-y:scroll;
+        overflow-x:hidden;
+      }
+      #controls {
+        background-color:wheat;
+        height:20%;
       }
 
     </style>
-  </head>
-  <body>
 
+</head>
 
-    <div id="messages_container" style="height:80%; overflow-y:scroll" >
-    <ul id="messages"></ul>
-    </div>
+<body>
 
-  <!--   <table border="0" cellspacing="1" cellpadding="0">
-  <tr>
-    <td>
-      <a href="http://www.whoohoo.co.uk/"><img src="http://www.whoohoo.co.uk/external.gif" border="0"></a><br>
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <form method="POST" action="http://www.whoohoo.co.uk/external.asp">
-        <textarea wrap="soft" name="string" rows="9" cols="20"></textarea><br><br>
-        <input type="image" SRC="http://www.whoohoo.co.uk/translate.gif" value="Translate" border="0">
-        <input type="hidden" name="topic" value="translator">
-        <input type="hidden" name="translator" value="scottie">
-        <input type="hidden" name="siteurl" value="http://www.uofantarctica.com">
-      </form>
-    </td>
-  </tr>
-</table> -->
+    <div id="wrapper">
 
-    <div id="controls">
-      <span id="branding" style="float:left;" ></span>
-      <div id="accessories" style="float:right;">
-        
-
-        <fb:login-button scope="public_profile,email" size="xlarge" onlogin="checkLoginState();" style="float:left;">
-        </fb:login-button>
-
-        <span id="status">
-        </span>
-
-        <div class="input-group input-group-lg" style="float:right;">
-          <label for="user_dropdown">Send To</label>
-          <select class="form-control" id="user_dropdown"></select>
+        <!-- Sidebar -->
+        <div id="sidebar-wrapper">
+            <ul class="sidebar-nav">
+                <li class="sidebar-brand">
+                    <a href="#">
+                        Start Bootstrap
+                    </a>
+                </li>
+                <li>
+                    <a href="#">Dashboard</a>
+                </li>
+                <li>
+                    <a href="#">Shortcuts</a>
+                </li>
+                <li>
+                   <div class="input-group">
+                      <label for="transform_dropdown">Choose a Transform</label>
+                      <select class="form-control" id="transform_dropdown"></select>
+                    </div>
+                </li>
+                <li>
+                    <a href="#">About</a>
+                </li>
+                <li>
+                    <a href="#">Services</a>
+                </li>
+                <li>
+                    <a href="#">Contact</a>
+                </li>
+                 <li>
+                  <span id="branding" ></span>
+                </li>
+            </ul>
         </div>
+        <!-- /#sidebar-wrapper -->
 
-        <div class="input-group input-group-lg" style="float:right;">
-          <label for="transform_dropdown">Choose a Transform</label>
-          <select class="form-control" id="transform_dropdown"></select>
+        <!-- Page Content -->
+        <div id="page-content-wrapper">
+          <div id ="wrapper2" class="container-fluid">
+            <div id = "messages">
+            </div>
+            <div id = "controls">
+              <br>
+              <div class = "col-xs-2">
+                <a href="#menu-toggle" class="btn btn-default btn-lg" id="menu-toggle"><span class="glyphicon glyphicon-menu-hamburger" aria-hidden="true"></span> Menu</a>
+              </div>
+              <div class = "col-xs-10">
+                <div class="input-group input-group-lg">
+                  <input id="m" type="text" class="form-control input-lg" autocomplete="off" placeholder="Your Message Here...">
+                  <span class="input-group-btn" >
+                    <button id="send_button" class="btn btn-info btn-lg" type="button">
+                      <span class="glyphicon glyphicon-send" aria-hidden="true"></span> Send
+                    </button>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-
-        <span class="input-group-btn" style="float:left;">
-          <button id="transform_button" class="btn btn-info btn-lg" type="button">
-            <span class="glyphicon glyphicon-star" aria-hidden="true"></span> Transform
-          </button>
-        </span>
-
-      </div>
-      <div class="col-lg-12 col-xs-12">
-      <div class="input-group ">
-        <span class="input-group-btn" >
-          <button id="send_button" class="btn btn-info btn-lg" type="button">
-            <span class="glyphicon glyphicon-send" aria-hidden="true"></span> Send
-          </button>
-        </span>
-        <input id="m" type="text" class="form-control input-lg" autocomplete="off" placeholder="Your Message Here...">
-      </div>
-
-
+        <!-- /#page-content-wrapper -->
     </div>
+    <!-- /#wrapper -->
 
+    <!-- jQuery -->
+    <script src="js/jquery.js"></script>
 
+    <!-- Bootstrap Core JavaScript -->
+    <script src="js/bootstrap.min.js"></script>
 
-
-    <!--
-      Below we include the Login Button social plugin. This button uses
-      the JavaScript SDK to present a graphical Login button that triggers
-      the FB.login() function when clicked.
-    -->
-
- 
-
-
-
-
-
+    <!-- Menu Toggle Script -->
+    <script>
+    $("#menu-toggle").click(function(e) {
+        e.preventDefault();
+        $("#wrapper").toggleClass("toggled");
+    });
+    </script>
 
     <script src="https://www.google.com/jsapi" type="text/javascript"></script>
-    
     <script src ="https://cdn.socket.io/socket.io-1.2.0.js"></script>
-    <script src ="http://code.jquery.com/jquery-1.11.1.js"></script>
-
-    <!--
-    <script src = "http://localhost:8287/socket.io.js" type="text/javascript"></script>
-   
-    <script type="text/javascript" src = "http://localhost:8287/jquery.js"></script>
-    -->
-
     <script src = "/socket.io/socket.io.js"></script>
-    <!-- Latest compiled and minified CSS -->
-<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+    <script src = "js/facebook.js"></script>
+    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
 
 
-<!-- Latest compiled JavaScript -->
-<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
-
-
-
-<script src = "js/facebook.js"></script>
 <script>
 
   function SetupFacebook(){
@@ -136,14 +144,12 @@
     LoadFacebookSDK();
   }
 
-  SetupFacebook();
-
   // Here we run a very simple test of the Graph API after login is
 // successful.  See statusChangeCallback() for when this call is made.
 function FacebookLoggedInCallback() {
   FB.api('/me', function(response) {
-    document.getElementById('status').innerHTML =
-      'Thanks for logging in, ' + response.name + '!';
+    // document.getElementById('status').innerHTML =
+      // 'Thanks for logging in, ' + response.name + '!';
     document.facebook.response = response;
     document.facebook.name = response.name;
     document.facebook.id = response.id;
@@ -153,24 +159,12 @@ function FacebookLoggedInCallback() {
 }
 </script>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     <script>
       
       function SetupSockets(){
         document.socket = io();
+        console.log(document.socket);
+        // console.log(JSON.stringify(socket));
         document.socket.on('chat message', function(chat_message){
           ChatMessageContainer(chat_message);
         });
@@ -221,9 +215,6 @@ function FacebookLoggedInCallback() {
         PopulateTransformDropdown();
       }
 
-
-
-
       const EVERYONE_ID = 1;
       const EVERYONE_AND_LAUREN_ID = 2;
       // const JUST_LAUREN_ID = 3;
@@ -267,6 +258,8 @@ function FacebookLoggedInCallback() {
       }
 
       $(document).ready(function(){
+        // SetupFacebook();
+        // SetupGoogleSearch();
         SetupSockets();
         EnableScrollDownOnResize();
         RequestRecentChatMessages();
@@ -288,12 +281,7 @@ function FacebookLoggedInCallback() {
       function HitSend(){
         var input = GetInput();
         ClearInput();
-        // var words = SplitMessage(input);
-        // for(var index in words){
-        //   var word = words[index];
-        //   SendMsg(word);
-        // }
-        // SendSplittableMsg(input);
+        console.log("sending " + input);
         document.socket.emit('chat message', new ChatMessage(input));
         return false;
       }
@@ -405,16 +393,14 @@ function FacebookLoggedInCallback() {
       function Label(chat_message){
         var label_text = LabelText(chat_message);
         var label_pic = LabelPicture(chat_message);
-        var label = $("<div  class='well col-md-2 col-sm-2' name='label'>");
+        var label = GenerateLabelHTML();
         var text = $("<p>").text(label_text);
         var time = $("<p>").text(new Date(chat_message.timestamp).toLocaleString());
-        // var id = $("<p>").text(chat_message.author_id);
+        label.append(label_pic);
+
         label.append(text);
         label.append(time);
-        // label.append(id);
-        label.append(label_pic);
-        label.css('display','inline-block');
-        label.css('margin-right',20);
+
         return label;
       }
       function LabelText(chat_message){
@@ -429,33 +415,48 @@ function FacebookLoggedInCallback() {
         return pic;
       }
 
-
-
-      function ChatLine(chat_message){
-        var container = $('<li class="clearfix">');
-        var line = $('<div name = "line">');
-        var content = $('<div name = "content">');
-        container.append(line);
-        var label = Label(chat_message);
-        var images = $('<div name="chatline_images" class="col-md-8 col-sm-8">').css('display','inline-block');
-
-        if(ISaid(chat_message)){
-          line.append(label);
-          line.append(images);
-        }
-        else{
-          // line.append($("<div class='col-md-2'>"));
-          line.append(label);
-          line.append(images);
-          // line.append(images).css("float","left");
-          // line.append(label).css("float","right");
-          // line.css("float","right");
-        }
-
-        // container.append($("<div>").attr("class","clearfix"));
-        container.attr("name",chat_message.author_id);
-        return container;
+      var GenerateNewMessageLine = function(){
+        var line = $("<li class='clearfix'></li>");
+        return line;
       }
+
+      var GenerateLabelHTML = function(){
+        var label = $("<div name='label' class='well col-xs-3' style='background-color:BurlyWood; margin-right:20; display:inline-block; '></div>");
+        // label.css('margin-right',20);;
+        return label;
+      }
+
+      var GenerateMsgHTML = function(){
+         var msg = $("<div name='msg' class='col-xs-9' style='background-color:red;'></div>");
+         return msg;
+      }
+
+      // function ChatLine(chat_message){
+      //   var container = $('<li class="clearfix">');
+      //   var line = $('<div name = "line">');
+      //   var content = $('<div name = "content">');
+      //   container.append(line);
+      //   var label = Label(chat_message);
+      //   var images = $('<div name="chatline_images" class="col-xs-10">').css('display','inline-block');
+
+      //   if(ISaid(chat_message)){
+      //     line.append(label);
+      //     line.append(images);
+      //   }
+      //   else{
+      //     // line.append($("<div class='col-md-2'>"));
+      //     line.append(label);
+      //     line.append(images);
+      //     // line.append(images).css("float","left");
+      //     // line.append(label).css("float","right");
+      //     // line.css("float","right");
+      //   }
+
+      //   // container.append($("<div>").attr("class","clearfix"));
+      //   container.attr("name",chat_message.author_id);
+      //   // return container;
+      //   return GenerateNewMessageLine();
+      // }
 
       function ISaid(chat_message){
         var my_id = GetMyID();
@@ -493,14 +494,54 @@ function FacebookLoggedInCallback() {
         return (author1 == author2);
       }
 
-      var AddImageMessage = function(container, text){
-        var words = text.split(" ");
+      var Msg = function(chat_message){
+        if(IsTextMessage(chat_message)){
+          return TextMsg(chat_message);
+        }
+        if(IsLocalImageMessage(chat_message)){
+          return LocalImageMsg(chat_message);
+        }
+        if(IsServerImageMessage(chat_message)){
+          return ServerImageMsg(chat_message);
+        }
+      }
+
+      var IsLocalImageMessage = function(chat_message){
+        return chat_message.is_images && !chat_message.image_url_lists;
+      }
+      var IsServerImageMessage = function(chat_message){
+        return chat_message.is_images && chat_message.image_url_lists;
+      }
+      var IsTextMessage = function(chat_message){
+        return !chat_message.is_images;
+      }
+
+      var TextMsg = function(chat_message){
+        var msg = GenerateMsgHTML();
+        msg.text(chat_message.transformed_text);
+        return msg;
+      }
+
+      var ServerImageMsg = function(chat_message){
+        var msg = GenerateMsgHTML();
+        chat_message["image_url_lists"].forEach(
+          function(url_list){
+            var cycling_images = CombineImages(url_list);
+            msg.append(cycling_images);
+          }
+        );
+        return msg;
+      }
+
+      var LocalImageMsg = function(chat_message){
+        var msg = GenerateMsgHTML();
         var img_containers = [];
+        var words = chat_message.original_text.split(" ");
         words.forEach(function(word,index){
           img_containers[index] = $("<div>");
           img_containers[index].css('display','inline-block');
+
           GoogleSearch(
-            img_containers[index],
             word,
             function(err,google_results){
               var url_list = [];
@@ -510,20 +551,41 @@ function FacebookLoggedInCallback() {
               img_containers[index].append(CombineImages(url_list));
             }
           );
-          container.append(img_containers[index]);
+          msg.append(img_containers[index]);
         });
-        ScrollDown();
+        return msg;
       }
 
-      var AddImageMessageFromURLLists = function(container, url_lists){
-        url_lists.forEach(
-          function(url_list){
-            var cycling_images = CombineImages(url_list);
-            container.append(cycling_images);
-          }
-        );
-        ScrollDown();
-      }
+      // var AddImageMessage = function(container, text){
+      //   var words = text.split(" ");
+      //   var img_containers = [];
+      //   words.forEach(function(word,index){
+      //     img_containers[index] = $("<div>");
+      //     img_containers[index].css('display','inline-block');
+      //     GoogleSearch(
+      //       word,
+      //       function(err,google_results){
+      //         var url_list = [];
+      //         google_results.forEach(function(result){
+      //           url_list.push(result.tbUrl);
+      //         });
+      //         img_containers[index].append(CombineImages(url_list));
+      //       }
+      //     );
+      //     container.append(img_containers[index]);
+      //   });
+      //   ScrollDown();
+      // }
+
+      // var AddImageMessageFromURLLists = function(container, url_lists){
+      //   url_lists.forEach(
+      //     function(url_list){
+      //       var cycling_images = CombineImages(url_list);
+      //       container.append(cycling_images);
+      //     }
+      //   );
+      //   ScrollDown();
+      // }
 
       var CombineImages = function(url_list){
         var container = $("<div>");
@@ -544,12 +606,12 @@ function FacebookLoggedInCallback() {
        //         }
        //         CycleThroughImages(container);
 
-      var AddTextMessage = function(container, text){
-        var text_container = $("<div>");
-        text_container.text(text);
-        container.append(text_container);
-        ScrollDown();
-      }
+      // var AddTextMessage = function(container, text){
+      //   var text_container = $("<div>");
+      //   text_container.text(text);
+      //   container.append(text_container);
+      //   ScrollDown();
+      // }
 
       function ChatMessageContainer(chat_message){
         // var cur_author = chat_message.author_id;
@@ -561,24 +623,30 @@ function FacebookLoggedInCallback() {
           container = prev_container;
         }
         else{
-          container = ChatLine(chat_message);
+          container = GenerateNewMessageLine();//chat_message);
           $("#messages").append(container);
         }
         document.prev_chat_message = chat_message;
 
 
-        var cont = container.find("[name='chatline_images']");
-        if(chat_message.is_images){
-          if(chat_message.image_url_lists){ // Server provides URLs
-            AddImageMessageFromURLLists(cont,chat_message.image_url_lists);
-          }
-          else{ // Locally get URLs
-            AddImageMessage(cont,chat_message.original_text);
-          }
-        }
-        else{
-          AddTextMessage(cont,chat_message.transformed_text);
-        }
+        // var cont = container.find("[name='chatline_images']");
+        // if(chat_message.is_images){
+        //   if(chat_message.image_url_lists){ // Server provides URLs
+        //     AddImageMessageFromURLLists(cont,chat_message.image_url_lists);
+        //   }
+        //   else{ // Locally get URLs
+        //     AddImageMessage(cont,chat_message.original_text);
+        //   }
+        // }
+        // else{
+        //   AddTextMessage(cont,chat_message.transformed_text);
+        // }
+
+        container.append(Label(chat_message));
+        container.append(Msg(chat_message));
+        ScrollDown();
+
+        // container,Label(chat_message),$("<div>oops!</div>"));
       }
 
 
@@ -607,7 +675,6 @@ function FacebookLoggedInCallback() {
         var max = container.children().length;
         // console.log("max: " + max);
         index = (index >= max)? 0 : index;
-
         ShowOneImage(container,index);
         setTimeout(function(){
           ShowNextImage(container,index+1);
@@ -647,14 +714,14 @@ function FacebookLoggedInCallback() {
 
 <script>
 
-      SetupGoogleSearch();
-
       function SetupGoogleSearch(){
         google.load('search', '1');
         google.setOnLoadCallback(function(){
+          console.log(google.search.Search);
           google.search.Search.getBranding('branding');
         })
       }
+      SetupGoogleSearch();
 
       function UpdateContainerDimensions(container, img){
         var img_h = img.get(0).naturalHeight;
@@ -672,7 +739,7 @@ function FacebookLoggedInCallback() {
         container.css("width", new_width);
       }
 
-      var GoogleSearch = function(container, string, callback){
+      var GoogleSearch = function(string, callback){
          // Create an Image Search instance.
         var my_search = new google.search.ImageSearch();
 
@@ -701,7 +768,7 @@ function FacebookLoggedInCallback() {
         );
 
         my_search.setResultSetSize(8);
-        my_search.destination_container = container;
+        // my_search.destination_container = container;
         my_search.execute(string);
         
       }
@@ -709,16 +776,6 @@ function FacebookLoggedInCallback() {
     </script>
 
 
+</body>
 
-
-
-
-
-
-
-
-
-
-
-  </body>
 </html>

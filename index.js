@@ -1,4 +1,5 @@
-var app = require('express')();
+var express = require('express');
+var app = express();
 var http = require('http');
 var app_http = http.Server(app);
 var io = require('socket.io')(app_http);
@@ -44,12 +45,15 @@ function RemoveUser(socket_id){
 }
 
 app.get('/', function(req,res){
-  res.sendFile(__dirname + '/index.html');
+  res.sendFile(__dirname + '/newindex.html');
 });
 
-app.get('/facebook.js',function(req,res){
-  res.sendFile(__dirname + '/facebook.js');
-});
+// app.get('/facebook.js',function(req,res){
+//   res.sendFile(__dirname + '/facebook.js');
+// });
+
+// app.get('/css/')
+app.use(express.static('public'));
 
 function ListUsers(socket){
   for(var index in active_users){
@@ -58,6 +62,7 @@ function ListUsers(socket){
   }
 }
 
+console.log("IO: " + io);
 
 
 io.on('connection', function(socket){

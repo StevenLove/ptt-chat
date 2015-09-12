@@ -171,7 +171,7 @@ var ms_translate = function(client_secret){
     );
   }
 
-/* Access Tokens */
+  /* Access Tokens */
 
   var AccessToken = function(token_body){
     var self = this;
