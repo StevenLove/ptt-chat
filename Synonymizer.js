@@ -19,6 +19,45 @@ var Synonymizer = function(){
     SynonymizeWordItemList(words,callback);
   }
 
+
+  var MemoizedSynonymize = async.memoize(
+    function(sentence, options, callback){
+      Synonymize(
+        sentence, 
+        options, 
+        function(err, result){
+
+        }
+      )
+    },
+    function(text,options){
+      var str = text+":"+options.mode;
+      return str.hashCode();
+    }
+  );
+
+  // var MemoizedSynonymizeOneAtATime = function(sentence, options, callback){
+  //   var words = sentence.split(" ");
+  //   var synonymized = [];
+  //   async.forEachOf(
+  //     words,
+  //     function(word,index,async_cb){
+  //       MemoizedSynonymize(
+  //         word,
+  //         options,
+  //         function(err, result){
+  //           synonymized[index] = result;
+  //           async_cb();
+  //         }
+  //       );
+  //     },
+  //     function(err){ //async_cb
+  //       if(err) console.error(err);
+  //       callback(err,CreateReturnObject(translated.join("")));
+  //     }  
+  //   );
+  // }
+
   var SmartSynonymize = function(text, options, output_callback){
     async.waterfall(
       [
@@ -36,7 +75,7 @@ var Synonymizer = function(){
     async.map(
       word_items,
       function(word_item, async_cb){
-        SynonymizeWordItem(
+        SynonymizeWordItemMemoized(
           word_item,
           async_cb
         );
@@ -46,6 +85,7 @@ var Synonymizer = function(){
       }
     );
   }
+
 
   var SynonymizeWordItem = function(word_item, callback){
     console.log("Synonymizing " + word_item["word"] + " with options " + JSON.stringify(word_item["options"]));
@@ -61,6 +101,15 @@ var Synonymizer = function(){
       }
     );
   }
+
+  var SynonymizeWordItemMemoized = async.memoize(
+    SynonymizeWordItem,
+    function(word_item){
+      var str = JSON.stringify(word_item["options"])+":"+word_item["word"];
+      return str.hashCode();
+    }
+  );
+
 
   /* Parsing the Input*/
 
