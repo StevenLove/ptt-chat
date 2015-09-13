@@ -11,19 +11,19 @@ var ImageSearch = function(){
   /* Exported */
  
   self.BingImages = function (text, options, callback){
-    ApplyToList(BingImage, text.split(" "), options, callback);
+    ApplyToList(BingImageMemoizedSafe, text.split(" "), options, callback);
   }
 
   self.GoogleImages = function(sentence, options, callback){
-    console.log("Looking up google images on server");
     ApplyToList(GoogleImageTwoPages, sentence.split(" "), options, callback);
   }
 
-
   /* Bing */
 
+
   var BingImage = function(text, options, callback){
-    var bing_options =  {top: 3, market: 'en-US'};
+    var bing_options =  {top: 8, market: 'en-US'};
+    console.log("Consuming Bing Image API for " + text);
     Bing.images(
       text,
       bing_options,
@@ -31,12 +31,51 @@ var ImageSearch = function(){
         var success = {};
         if(!error){
           success["urls"] = ParseBingResponse(body);
-          console.log(success);
         }
         callback(error,success);
       }
     );
   }
+
+
+
+  var BingImageMemoized = async.memoize(
+    BingImage,
+    function(text,options){
+      var str = options.mode + ":" + text;
+      return str.hashCode();
+    }
+  );
+
+  var RemoveErrorsFromMemo = function(memo){
+    Object.keys(memo).forEach(function(key){
+      var result = memo[key];
+      if(result[0]){
+        delete memo[key];
+      }
+    })
+  }
+
+  var BingImageMemoizedSafe = function(text, options, callback){
+    BingImageMemoized(
+      text, 
+      options, 
+      function(err, result){
+        if(err){
+          var memo = BingImageMemoized["memo"];
+          RemoveErrorsFromMemo(memo);
+          BingImageMemoizedSafe(text, options, callback);
+        }
+        else{
+          callback(err,result);
+        }
+      }
+    );
+  }
+
+
+
+
 
   // replace this foreach with a map
   var ParseBingResponse = function(body){
@@ -54,8 +93,8 @@ var ImageSearch = function(){
   var GoogleImageTwoPages = function(text, options, callback){
     async.parallel(
       [
-        async.apply(GoogleImageOnePage, text, 0),
-        async.apply(GoogleImageOnePage, text, 1)
+        async.apply(ConsumeGoogleAPIMemoized, text, 0),
+        async.apply(ConsumeGoogleAPIMemoized, text, 1)
       ],
       function(err, results){
         var success = {};
@@ -67,8 +106,10 @@ var ImageSearch = function(){
     );
   }
 
-  var GoogleImageOnePage = function(text, page_num, callback){
+
+  var ConsumeGoogleAPI= function(text, page_num, callback){
     var num_imgs_to_skip = page_num * GOOGLE_PAGE_SIZE;
+    console.log("Consuming Google API, searching for " + text + " page " + page_num);
     googleimages.search({
       "for": text, 
       "page": num_imgs_to_skip, 
@@ -81,6 +122,17 @@ var ImageSearch = function(){
       }
     });
   }
+
+
+  var ConsumeGoogleAPIMemoized = async.memoize(
+    ConsumeGoogleAPI,
+    function(
+      text,
+      page_num){
+      var str = page_num+":"+text;
+      return str.hashCode();
+    }
+  );
 
   var ParseGoogleImageResponse = function(images){
     return images.map(function(image){
@@ -110,13 +162,10 @@ var ImageSearch = function(){
           options,
           function(i){
             return function(err,succ){
-              if(err){
-                console.log(err);
-              }
-              else{
+              if(!err){
                 result[i] = succ;
               }
-              cb();
+              cb(err);
             }
           }(index)
         );
