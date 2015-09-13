@@ -74,9 +74,6 @@ var ImageSearch = function(){
   }
 
 
-
-
-
   // replace this foreach with a map
   var ParseBingResponse = function(body){
     var results = body["d"]["results"];

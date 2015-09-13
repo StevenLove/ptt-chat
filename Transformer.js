@@ -77,25 +77,25 @@ var Transformer = function(){
       case "Paraphrase":
         f = Paraphrase;
         break;
-      case "Picture": // each word
+      case "Picture": 
         f = self.GoogleImages;
         break;
-      case "GoogleImages": // each word
+      case "GoogleImages": 
         f = self.GoogleImages;
         break;
-      case "BingImages": // each word
+      case "BingImages": 
         f = self.BingImages;
         break;
-      case "Synonymize": // each word
+      case "Synonymize": 
         f = self.Synonymize;
         break;
-      case "PartsOfSpeech":
+      case "PartsOfSpeech": // yet to be memoized
         f = self.PartOfSpeechify;
         break;
       case "SmartSynonymize":
         f = self.SmartSynonymize;
         break;
-      case "Scots": // each word
+      case "Scots": 
         f = self.Scots;
         break;
       default :
