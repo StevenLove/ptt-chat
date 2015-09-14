@@ -34,11 +34,22 @@
         height: 80%;
         overflow-y:scroll;
         overflow-x:hidden;
+        list-style-type: none;
+        margin:0px;
+        padding:0px;
+      }
+      #bottom_strip {
+        background-color:wheat;
+        height:70px;
+      }
+      .msg-group {
+        padding-right:0px;
       }
       #controls {
-        background-color:wheat;
-        height:20%;
+        /*margin-top: 5px;*/
+        padding-top:12px;
       }
+      
 
     </style>
 
@@ -87,21 +98,24 @@
         <!-- Page Content -->
         <div id="page-content-wrapper">
           <div id ="wrapper2" class="container-fluid">
-            <div id = "messages">
-            </div>
-            <div id = "controls">
-              <br>
-              <div class = "col-xs-2">
-                <a href="#menu-toggle" class="btn btn-default btn-lg" id="menu-toggle"><span class="glyphicon glyphicon-menu-hamburger" aria-hidden="true"></span> Menu</a>
-              </div>
-              <div class = "col-xs-10">
-                <div class="input-group input-group-lg">
-                  <input id="m" type="text" class="form-control input-lg" autocomplete="off" placeholder="Your Message Here...">
-                  <span class="input-group-btn" >
-                    <button id="send_button" class="btn btn-info btn-lg" type="button">
-                      <span class="glyphicon glyphicon-send" aria-hidden="true"></span> Send
-                    </button>
-                  </span>
+            <!-- <div id = "messages_div"> -->
+              <ul id = "messages">
+              </ul>
+            <!-- </div> -->
+            <div id = "bottom_strip">
+              <div id = "controls">
+                <div class = "col-xs-2">
+                  <a href="#menu-toggle" class="btn btn-default btn-lg" id="menu-toggle"><span class="glyphicon glyphicon-menu-hamburger" aria-hidden="true"></span> </a>
+                </div>
+                <div class = "col-xs-10">
+                  <div class="input-group input-group-lg">
+                    <input id="m" type="text" class="form-control input-lg" autocomplete="off" placeholder="Your Message Here...">
+                    <span class="input-group-btn" >
+                      <button id="send_button" class="btn btn-info btn-lg" type="button">
+                        <span class="glyphicon glyphicon-send" aria-hidden="true"></span> Send
+                      </button>
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -390,47 +404,6 @@ function FacebookLoggedInCallback() {
       }
       RandomWord();
 
-      function Label(chat_message){
-        var label_text = LabelText(chat_message);
-        var label_pic = LabelPicture(chat_message);
-        var label = GenerateLabelHTML();
-        var text = $("<p>").text(label_text);
-        var time = $("<p>").text(new Date(chat_message.timestamp).toLocaleString());
-        label.append(label_pic);
-
-        label.append(text);
-        label.append(time);
-
-        return label;
-      }
-      function LabelText(chat_message){
-        var time = "(" + chat_message.timestamp + ")";
-        var author = chat_message.author_name;
-        var label_text = author;
-        return label_text;
-      }
-      function LabelPicture(chat_message){
-        var url = FacebookProfilePicture(chat_message.author_facebook_id);
-        var pic = $("<img>").attr("src", url);
-        return pic;
-      }
-
-      var GenerateNewMessageLine = function(){
-        var line = $("<li class='clearfix'></li>");
-        return line;
-      }
-
-      var GenerateLabelHTML = function(){
-        var label = $("<div name='label' class='well col-xs-3' style='background-color:BurlyWood; margin-right:20; display:inline-block; '></div>");
-        // label.css('margin-right',20);;
-        return label;
-      }
-
-      var GenerateMsgHTML = function(){
-         var msg = $("<div name='msg' class='col-xs-9'></div>");
-         return msg;
-      }
-
       function ISaid(chat_message){
         var my_id = GetMyID();
         var msg_id = chat_message.author_id;
@@ -440,8 +413,9 @@ function FacebookLoggedInCallback() {
       function IsSameSentence(prev_message, next_message){
         return (
           BothExist(prev_message,next_message) &&
-          SameAuthor(prev_message,next_message) &&
-          AreCloseEnough(prev_message,next_message)
+          SameAuthor(prev_message,next_message)
+          //  &&
+          // AreCloseEnough(prev_message,next_message)
             );
       }
       function BothExist(cm1,cm2){
@@ -467,229 +441,232 @@ function FacebookLoggedInCallback() {
         return (author1 == author2);
       }
 
-      var Msg = function(chat_message){
-        if(IsTextMessage(chat_message)){
-          return TextMsg(chat_message);
+  /* Building Chat Line HTML/CSS */
+
+  function ChatMessageContainer(chat_message){
+    // var cur_author = chat_message.author_id;
+    var prev_container = $("#messages").children().last();
+    // var prev_author = prev_container.attr("name");
+    var container;
+
+    if(IsSameSentence(document.prev_chat_message,chat_message)){
+      container = prev_container;
+    }
+    else{
+      container = GenerateNewMessageLine();//chat_message);
+      $("#messages").append(container);
+      container.children().eq(0).append(LabelPicture(chat_message));
+      // container.append(Label(chat_message));
+    }
+    document.prev_chat_message = chat_message;
+    container.children().eq(1).append(Msg(chat_message));
+    ScrollDown();
+  }
+
+  /* Template HTML */
+
+  var GenerateNewMessageLine = function(){
+    var line = $("<li class='clearfix' name='line'></li>");
+    line.append(GenerateLabelHTML());
+    line.append(GenerateMsgGroupHTML());
+    return line;
+  }
+
+  var GenerateLabelHTML = function(){
+    var label = $("<div name='label' class='well col-xs-2' style='background-color:BurlyWood; display:inline-block;'></div>");
+    return label;
+  }
+
+  var GenerateMsgGroupHTML = function(){
+     var msg = $("<div name='msg_group' class='col-xs-10 msg-group'></div>");
+     return msg;
+  }
+
+  var GenerateMsgHTML = function(){
+    var msg = $("<div name='msg'></div>");
+    return msg;
+  }
+
+
+  /* Labels */
+
+  function Label(chat_message){
+    // var label_text = LabelText(chat_message);
+    var label_pic = LabelPicture(chat_message);
+    // var label = GenerateLabelHTML();
+    // var text = $("<p>").text(label_text);
+    // var time = $("<p>").text(new Date(chat_message.timestamp).toLocaleString());
+    // label.append(label_pic);
+
+    // label.append(text);
+    // label.append(time);
+    // return label;
+    return label_pic;
+  }
+  // function LabelText(chat_message){
+  //   var time = "(" + chat_message.timestamp + ")";
+  //   var author = chat_message.author_name;
+  //   var label_text = author;
+  //   return label_text;
+  // }
+  function LabelPicture(chat_message){
+    var url;
+    if(chat_message.author_facebook_id){
+      url = FacebookProfilePicture(chat_message.author_facebook_id);
+    }
+    else{
+      url = "https://robohash.org/"+document.ip_address;
+    }
+    var pic = $("<img>").attr("src", url).width(50);
+    return pic;
+  }
+
+  /* Messages */
+
+  var Msg = function(chat_message){
+    if(IsTextMessage(chat_message)){
+      return TextMsg(chat_message);
+    }
+    if(IsLocalImageMessage(chat_message)){
+      return LocalImageMsg(chat_message);
+    }
+    if(IsServerImageMessage(chat_message)){
+      return ServerImageMsg(chat_message);
+    }
+  }
+
+  var IsLocalImageMessage = function(chat_message){
+    return chat_message.is_images && !chat_message.image_url_lists;
+  }
+  var IsServerImageMessage = function(chat_message){
+    return chat_message.is_images && chat_message.image_url_lists;
+  }
+  var IsTextMessage = function(chat_message){
+    return !chat_message.is_images;
+  }
+
+  var TextMsg = function(chat_message){
+    var msg = GenerateMsgHTML();
+    msg.text(chat_message.transformed_text);
+    return msg;
+  }
+
+  var ServerImageMsg = function(chat_message){
+    var msg = GenerateMsgHTML();
+    chat_message["image_url_lists"].forEach(
+      function(url_list){
+        var cycling_images = CombineImages(url_list);
+        msg.append(cycling_images);
+      }
+    );
+    return msg;
+  }
+
+  var LocalImageMsg = function(chat_message){
+    var msg = GenerateMsgHTML();
+    var img_containers = [];
+    var words = chat_message.original_text.split(" ");
+    words.forEach(function(word,index){
+      img_containers[index] = $("<div>");
+      img_containers[index].css('display','inline-block');
+
+      GoogleSearch(
+        word,
+        function(err,google_results){
+          var url_list = [];
+          google_results.forEach(function(result){
+            url_list.push(result.tbUrl);
+          });
+          img_containers[index].append(CombineImages(url_list));
         }
-        if(IsLocalImageMessage(chat_message)){
-          return LocalImageMsg(chat_message);
-        }
-        if(IsServerImageMessage(chat_message)){
-          return ServerImageMsg(chat_message);
-        }
+      );
+      msg.append(img_containers[index]);
+    });
+    return msg;
+  }
+
+
+  /* Displaying Images */
+
+  var CombineImages = function(url_list){
+    var container = $("<div>");
+    url_list.forEach(
+      function(url){
+        var img = ResultImage(url);
+        container.append(img);
+        container.css('display','inline-block');
       }
+    );
+    CycleThroughImages(container);
+    return container;
+  }
 
-      var IsLocalImageMessage = function(chat_message){
-        return chat_message.is_images && !chat_message.image_url_lists;
+  function ResultImage(url){
+    var img = $("<img>");
+    img.on("load", function(){
+      ScrollDown();
+      img.parent().show();
+    });
+    
+    // img.css('display','inline-block');
+    // img.hide();
+    img.css('width',150);
+    img.css('height',150);
+    img.attr('src', url);
+    
+    return img;
+  }
+
+  function CycleThroughImages(container){
+    ShowNextImage(container,0);
+  }
+      
+  function ShowNextImage(container,index){
+    index = parseInt(index);
+    var max = container.children().length;
+    // console.log("max: " + max);
+    index = (index >= max)? 0 : index;
+    ShowOneImage(container,index);
+    setTimeout(function(){
+      ShowNextImage(container,index+1);
+    },3000);
+  }
+  function ShowOneImage(container,index){
+    container.children().hide();
+    var index_from_1 = parseInt(index) + 1;
+    container.children('img:nth-child('+index_from_1+')').show();
+  }
+  function ShowAllImages(container){
+    container.children().show();
+  }
+
+  /* Local Google Images */
+
+  function SetupGoogleSearch(){
+    google.load('search', '1');
+    google.setOnLoadCallback(function(){
+      console.log(google.search.Search);
+      google.search.Search.getBranding('branding');
+    })
+  }
+  SetupGoogleSearch();
+
+  var GoogleSearch = function(string, callback){
+     // Create an Image Search instance.
+    var my_search = new google.search.ImageSearch();
+    // Set searchComplete as the callback function when a search is 
+    // complete.  The imageSearch object will have results in it.
+    my_search.setSearchCompleteCallback(
+      this, 
+      function(){
+        callback(null,my_search.results);
       }
-      var IsServerImageMessage = function(chat_message){
-        return chat_message.is_images && chat_message.image_url_lists;
-      }
-      var IsTextMessage = function(chat_message){
-        return !chat_message.is_images;
-      }
-
-      var TextMsg = function(chat_message){
-        var msg = GenerateMsgHTML();
-        msg.text(chat_message.transformed_text);
-        return msg;
-      }
-
-      var ServerImageMsg = function(chat_message){
-        var msg = GenerateMsgHTML();
-        chat_message["image_url_lists"].forEach(
-          function(url_list){
-            var cycling_images = CombineImages(url_list);
-            msg.append(cycling_images);
-          }
-        );
-        return msg;
-      }
-
-      var LocalImageMsg = function(chat_message){
-        var msg = GenerateMsgHTML();
-        var img_containers = [];
-        var words = chat_message.original_text.split(" ");
-        words.forEach(function(word,index){
-          img_containers[index] = $("<div>");
-          img_containers[index].css('display','inline-block');
-
-          GoogleSearch(
-            word,
-            function(err,google_results){
-              var url_list = [];
-              google_results.forEach(function(result){
-                url_list.push(result.tbUrl);
-              });
-              img_containers[index].append(CombineImages(url_list));
-            }
-          );
-          msg.append(img_containers[index]);
-        });
-        return msg;
-      }
-
-      var CombineImages = function(url_list){
-        var container = $("<div>");
-        url_list.forEach(
-          function(url){
-            var img = ResultImage(url);
-            container.append(img);
-            container.css('display','inline-block');
-          }
-        );
-        CycleThroughImages(container);
-        return container;
-      }
-
-      function ChatMessageContainer(chat_message){
-        // var cur_author = chat_message.author_id;
-        var prev_container = $("#messages").children().last();
-        // var prev_author = prev_container.attr("name");
-        var container;
-
-        if(IsSameSentence(document.prev_chat_message,chat_message)){
-          container = prev_container;
-        }
-        else{
-          container = GenerateNewMessageLine();//chat_message);
-          $("#messages").append(container);
-          container.append(Label(chat_message));
-        }
-        document.prev_chat_message = chat_message;
-
-        
-        container.append(Msg(chat_message));
-        ScrollDown();
-
-        // container,Label(chat_message),$("<div>oops!</div>"));
-      }
-
-
-      function ResultImage(url){
-        var img = $("<img>");
-        img.on("load", function(){
-          ScrollDown();
-          img.parent().show();
-        });
-        
-        // img.css('display','inline-block');
-        // img.hide();
-        img.css('width',150);
-        img.css('height',150);
-        img.attr('src', url);
-        
-        return img;
-      }
-
-
-      function CycleThroughImages(container){
-        ShowNextImage(container,0);
-      }
-      function ShowNextImage(container,index){
-        index = parseInt(index);
-        var max = container.children().length;
-        // console.log("max: " + max);
-        index = (index >= max)? 0 : index;
-        ShowOneImage(container,index);
-        setTimeout(function(){
-          ShowNextImage(container,index+1);
-        },3000);
-      }
-      function ShowOneImage(container,index){
-        container.children().hide();
-        var index_from_1 = parseInt(index) + 1;
-        container.children('img:nth-child('+index_from_1+')').show();
-      }
-      function ShowAllImages(container){
-        container.children().show();
-      }
-
-      function WholeNumberMax(a,b){
-        if(typeof a !== 'number'){
-          a = 0;
-        }
-        if(typeof b !== 'number'){
-          b = 0;
-        }
-        return Math.max(a,b);
-      }
-
+    );
+    my_search.setResultSetSize(8);
+    my_search.execute(string);
+  }
 
 </script>
-
-
-
-
-
-
-
-
-
-
-
-<script>
-
-      function SetupGoogleSearch(){
-        google.load('search', '1');
-        google.setOnLoadCallback(function(){
-          console.log(google.search.Search);
-          google.search.Search.getBranding('branding');
-        })
-      }
-      SetupGoogleSearch();
-
-      function UpdateContainerDimensions(container, img){
-        var img_h = img.get(0).naturalHeight;
-        var old_height = container.prop("max_height");
-        var new_height = WholeNumberMax(old_height,img_h);
-        container.prop("max_height",new_height);
-        container.height(new_height);
-        // console.log(new_height);
-        // console.log(container.height());
-
-        var img_w = img.get(0).naturalWidth;
-        var old_width = container.prop("max_width");
-        var new_width = WholeNumberMax(old_width,img_w);
-        container.prop("max_width",new_width);
-        container.css("width", new_width);
-      }
-
-      var GoogleSearch = function(string, callback){
-         // Create an Image Search instance.
-        var my_search = new google.search.ImageSearch();
-
-        // Set searchComplete as the callback function when a search is 
-        // complete.  The imageSearch object will have results in it.
-        my_search.setSearchCompleteCallback(
-          this, 
-          function(){
-            callback(null,my_search.results);
-          }
-          // function(){
-          //   if (my_search.results && my_search.results.length > 0) {
-          //     // Loop through our results, printing them to the page.
-          //     var results = my_search.results;
-          //     var container = my_search.destination_container;
-          //      for (var i = 0; i < results.length; i++) {
-          //       var result = results[i];
-          //       var url = result.tbUrl;
-          //       var img = ResultImage(url)
-          //       container.append(img);
-          //      }
-          //      CycleThroughImages(container);
-          //   }
-          // },
-          // null
-        );
-
-        my_search.setResultSetSize(8);
-        // my_search.destination_container = container;
-        my_search.execute(string);
-        
-      }
-
-    </script>
 
 
 </body>
