@@ -263,7 +263,7 @@ var FacebookLoggedOutCallback = function(){
 
 
       function PopulateTransformDropdown(){
-        var options = ["None", "Synonymize", "Antonymize", "SmartSynonymize","Spanish","Images", "Paraphrase", "Scots"];
+        var options = ["None", "Synonymize", "Antonymize", "SmartSynonymize","Spanish","Images", "Paraphrase", "Scots", "PugImages"];
         options.forEach(function(option){
           $("#transform_dropdown").append("<option value = " + option +">" + option + "</option>");
         });
@@ -608,7 +608,9 @@ var FacebookLoggedOutCallback = function(){
       return ServerImageMsg(chat_message);
     }
   }
-
+  // var IsPugImageMessage = function(chat_message){
+  //   return chat_message.transformation_list =]
+  // }
   var IsLocalImageMessage = function(chat_message){
     return chat_message.is_images && !chat_message.image_url_lists;
   }
@@ -639,7 +641,15 @@ var FacebookLoggedOutCallback = function(){
   var LocalImageMsg = function(chat_message){
     var msg = GenerateMsgHTML();
     var img_containers = [];
-    var words = chat_message.original_text.split(" ");
+
+    if(chat_message.transform_list.indexOf("PugImages")>-1){
+      chat_message.transformed_text = PuggifySentence(chat_message.original_text);
+    }
+    else{
+      chat_message.transformed_text = chat_message.original_text;
+    }
+
+    var words = chat_message.transformed_text.split(" ");
     words.forEach(function(word,index){
       img_containers[index] = $("<div>");
       img_containers[index].css('display','inline-block');
@@ -659,6 +669,13 @@ var FacebookLoggedOutCallback = function(){
     return msg;
   }
 
+  var PuggifySentence = function(text){
+    var words = text.split(" ");
+    var result = words.map(function(word){
+      return "pug."+word;
+    }).join(" ");
+    return result;
+  }
 
   /* Displaying Images */
 

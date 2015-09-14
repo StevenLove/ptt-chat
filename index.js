@@ -299,7 +299,7 @@ function Transform(chat_message){
   var text = chat_message.original_text;
   var options = {};
 
-  if(mode === "LocalGoogleImages" || mode ==="Images"){
+  if(mode === "LocalGoogleImages" || mode ==="Images" || mode === "PugImages"){
     EmitImageChatMessage(chat_message);
   }
   else if(mode === "ServerGoogleImages"){
