@@ -25,12 +25,12 @@
     <![endif]-->
 
     <style>
-      html,body,#wrapper,#page-content-wrapper,#wrapper2{
+      html,body,#wrapper,#page-content-wrapper,#wrapper2,#messages{
         background-color:gray;
         height:100%;
       }
       #messages {
-        background-color: lightblue;
+        /*background-color: lightblue;*/
         height: 80%;
         overflow-y:scroll;
         overflow-x:hidden;
@@ -39,15 +39,51 @@
         padding:0px;
       }
       #bottom_strip {
-        background-color:wheat;
+        background-color:BurlyWood;
         height:70px;
       }
+      .line{
+      }
+      #messages li:nth-child(even){
+        background-color:Silver;
+      }
+      #messages li:nth-child(odd){
+        background-color:LightSteelBlue;
+      }
       .msg-group {
-        padding-right:0px;
+        padding-right:10px;
+        padding-left: 85px;
+        /*display:table-cell;*/
+        /*width:80%;*/
       }
       #controls {
         /*margin-top: 5px;*/
         padding-top:12px;
+      }
+      .label-column{
+        /*display: table-cell; width:20%; */
+        width:70px;
+        padding: 10px;
+        /*height: 100%;*/
+        background-color: BurlyWood;
+      }
+      .label {
+        /*background-color: BurlyWood;*/
+        width:50px;
+      }
+      #branding{
+        float:left;
+      }
+      #sidebar-wrapper{
+        overflow-x:hidden;
+        overflow-y:scroll;
+        /*padding-right:100px;*/
+      }
+     /* #sidebar-nav{
+        margin:50px;
+      }*/
+      .input-group{
+        margin-right :20px;
       }
       
 
@@ -64,32 +100,33 @@
             <ul class="sidebar-nav">
                 <li class="sidebar-brand">
                     <a href="#">
-                        Start Bootstrap
+                        PTT Chat
                     </a>
-                </li>
-                <li>
-                    <a href="#">Dashboard</a>
-                </li>
-                <li>
-                    <a href="#">Shortcuts</a>
                 </li>
                 <li>
                    <div class="input-group">
                       <label for="transform_dropdown">Choose a Transform</label>
                       <select class="form-control" id="transform_dropdown"></select>
-                    </div>
+                   </div>
                 </li>
                 <li>
-                    <a href="#">About</a>
+                  <div class="input-group">
+                      <label for="transform_dropdown">Send To</label>
+                      <select class="form-control" id="user_dropdown"></select>
+                   </div>
                 </li>
                 <li>
-                    <a href="#">Services</a>
+                    <fb:login-button scope="public_profile,email" size="large" onlogin="checkLoginState();" data-auto-logout-link="true">
+                    </fb:login-button>
                 </li>
                 <li>
-                    <a href="#">Contact</a>
+                    <div id="status"></div>
                 </li>
                  <li>
-                  <span id="branding" ></span>
+                    <span id="branding" ></span>
+                </li>
+                <li>
+                    
                 </li>
             </ul>
         </div>
@@ -149,13 +186,14 @@
 <script>
 
   function SetupFacebook(){
+    LoadFacebookSDK();
     // For now, control use of the dev version or public version
     // by commenting out one of the two lines below
     //*********************************************
-    SetFacebookInitCallback();
-    // SetFacebookInitCallbackDev();
+    // SetFacebookInitCallback();
+    SetFacebookInitCallbackDev();
     // *********************************************
-    LoadFacebookSDK();
+    
   }
 
   // Here we run a very simple test of the Graph API after login is
@@ -171,6 +209,14 @@ function FacebookLoggedInCallback() {
     document.socket.emit("facebook login", response);
   });
 }
+
+var FacebookLoggedOutCallback = function(){
+  document.facebook.logged_in = false;
+  document.facebook.name = "";
+  document.socket.emit("facebook logout", facebook.id);
+  document.facebook.id = "";
+}
+
 </script>
 
     <script>
@@ -271,15 +317,22 @@ function FacebookLoggedInCallback() {
         document.socket.emit('init');
       }
 
+      /* Initialization */
+
       $(document).ready(function(){
-        // SetupFacebook();
+        SetupFacebook();
         // SetupGoogleSearch();
         SetupSockets();
         EnableScrollDownOnResize();
         RequestRecentChatMessages();
         EnableSendButton();
         SetupTransforms();
+        EnableTooltips();
       });
+
+      function EnableTooltips(){
+        $('[data-toggle="tooltip"]').tooltip(); 
+      }
   
       function EnableSendButton(){
         $("#send_button").click(function(){
@@ -288,10 +341,6 @@ function FacebookLoggedInCallback() {
         EnableEnterToSend();
       }
 
-
-      // function EmitChatMessage(chat_message){
-      //   document.socket.emit('chat message', chat_message);
-      // }
       function HitSend(){
         var input = GetInput();
         ClearInput();
@@ -303,9 +352,7 @@ function FacebookLoggedInCallback() {
         var input = $('#m').val();
         return input;
       }
-      // function SendMsg(msg){
-      //   EmitChatMessage(new ChatMessage(msg));
-      // }
+
       function SendSplittableMsg(msg){
         EmitSplittableMessage(new ChatMessage(msg));
       }
@@ -315,12 +362,7 @@ function FacebookLoggedInCallback() {
       function ClearInput(){
         $('#m').val('');
       }
-      // function SplitMessage(msg){
-      //   var words = msg.split(" ").filter(Boolean);
-      //   console.log(msg);
-      //   console.log(words);
-      //   return words;
-      // }
+
       function EnableEnterToSend(){
         $("#m").keydown(function(event){
           if(event.keyCode == 13) {
@@ -453,9 +495,9 @@ function FacebookLoggedInCallback() {
       container = prev_container;
     }
     else{
-      container = GenerateNewMessageLine();//chat_message);
+      container = GenerateNewMessageLine(chat_message);//chat_message);
       $("#messages").append(container);
-      container.children().eq(0).append(LabelPicture(chat_message));
+      // container.children().eq(0).append(Label(chat_message));
       // container.append(Label(chat_message));
     }
     document.prev_chat_message = chat_message;
@@ -465,20 +507,27 @@ function FacebookLoggedInCallback() {
 
   /* Template HTML */
 
-  var GenerateNewMessageLine = function(){
+  var GenerateNewMessageLine = function(chat_message){
     var line = $("<li class='clearfix' name='line'></li>");
-    line.append(GenerateLabelHTML());
+    line.append(GenerateLabelColumnHTML(chat_message));
     line.append(GenerateMsgGroupHTML());
     return line;
   }
 
+  var GenerateLabelColumnHTML = function(chat_message){
+    var column = $("<div name='label-column' class='well label-column col-xs-2'></div>");
+    column.attr("data-toggle","tooltip");
+    column.attr("title",LabelText(chat_message));
+    column.append(Label(chat_message));
+    return column;
+  }
+
   var GenerateLabelHTML = function(){
-    var label = $("<div name='label' class='well col-xs-2' style='background-color:BurlyWood; display:inline-block;'></div>");
-    return label;
+    return $("<div name='label' class = 'label'></div>");
   }
 
   var GenerateMsgGroupHTML = function(){
-     var msg = $("<div name='msg_group' class='col-xs-10 msg-group'></div>");
+     var msg = $("<div name='msg_group' class=' msg-group'></div>");
      return msg;
   }
 
@@ -491,8 +540,10 @@ function FacebookLoggedInCallback() {
   /* Labels */
 
   function Label(chat_message){
+    // var label = $("<a href='#' data-toggle='tooltip' title='Hooray!'>");
     // var label_text = LabelText(chat_message);
     var label_pic = LabelPicture(chat_message);
+    // label.append(label_pic);
     // var label = GenerateLabelHTML();
     // var text = $("<p>").text(label_text);
     // var time = $("<p>").text(new Date(chat_message.timestamp).toLocaleString());
@@ -503,22 +554,31 @@ function FacebookLoggedInCallback() {
     // return label;
     return label_pic;
   }
-  // function LabelText(chat_message){
-  //   var time = "(" + chat_message.timestamp + ")";
-  //   var author = chat_message.author_name;
-  //   var label_text = author;
-  //   return label_text;
-  // }
+  function LabelText(chat_message){
+    var time = "(" + new Date(chat_message.timestamp).toLocaleTimeString() + ")";
+    var author = chat_message.author_name;
+    var label_text = author + " " + time;
+    return label_text;
+  }
   function LabelPicture(chat_message){
     var url;
     if(chat_message.author_facebook_id){
       url = FacebookProfilePicture(chat_message.author_facebook_id);
     }
     else{
-      url = "https://robohash.org/"+document.ip_address;
+      url = RobohashURL(chat_message.author_id);
     }
-    var pic = $("<img>").attr("src", url).width(50);
+    var pic = $("<img class='label-img'></img>").attr("src", url).width(50);
     return pic;
+  }
+
+  var RobohashURL = function(ip){
+    var base = "https://robohash.org/"
+    var last_digit = parseInt(ip.slice(-1));
+    var set = (last_digit < 4)? 1 : 
+              (last_digit < 8)? 2 : 
+              3;
+    return base + "ip" +"?set=set"+set;
   }
 
   /* Messages */
@@ -647,9 +707,11 @@ function FacebookLoggedInCallback() {
     google.setOnLoadCallback(function(){
       console.log(google.search.Search);
       google.search.Search.getBranding('branding');
-    })
+    });
   }
+  // No clue why, but if I try to call this in $(document).ready the whole page is blank.
   SetupGoogleSearch();
+  // So leave it here for now!
 
   var GoogleSearch = function(string, callback){
      // Create an Image Search instance.

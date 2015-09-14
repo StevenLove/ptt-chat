@@ -98,16 +98,12 @@ io.on('connection', function(socket){
   // io.emit("connection message",this_user);
 
   socket.on('facebook login', function(fresponse){
-    // console.log('facebook login');
-    // console.log(fresponse);
     var fid = fresponse.id;
     var fname = fresponse.name;
-    RegisterFacebookUser(socket,fid,fname);
-    // RemoveUser(this.id);
-    // AddUser(new_user);
-    // this.id = new_user.user_id;
-    // io.emit("disconnection message", {user_id:this.id, user_name: this.name});
-    // io.emit("connection message",new_user);
+    FacebookUserLogin(socket,fid,fname);
+  });
+  socket.on('facebook logout', function(){
+    FacebookUserLogout(socket);
   });
 
   socket.on('splittable chat message', function(unsplit_chat_message){
@@ -160,9 +156,6 @@ function Disconnect(socket){
 function RegisterUser(socket){
   var ip = socket.request.connection.remoteAddress;
   var sid = socket.id;
-
-
-
   var this_user = {};
   this_user.socket_id = sid;
   this_user.ip = ip;
@@ -176,10 +169,17 @@ function RegisterUser(socket){
   socket.emit('random name', random_name);
 }
 
-function RegisterFacebookUser(socket, fid, fname){
+function FacebookUserLogin(socket, fid, fname){
   active_users[socket.id].fid = fid;
   active_users[socket.id].fname = fname;
   active_users[socket.id].name = fname;
+  UpdateUserList();
+}
+
+function FacebookUserLogout(socket){
+  active_users[socket.id].fid = undefined;
+  active_users[socket.id].fname = undefined;
+  active_users[socket.id].name = active_users[socket.id].random_name;
   UpdateUserList();
 }
 
@@ -191,9 +191,9 @@ function DeregisterUser(socket){
 function GenerateName(user){
   var ip = user.ip;
   var sid = user.socket_id;
-  var random_first_name = phonetic.generate({seed: ip, syllables: 2, phoneticSimplicity: 10, compoundSimplicity: 10});
-  var random_last_name = phonetic.generate({seed: sid, syllables: 1, phoneticSimplicity: 10, compoundSimplicity: 10});
-  var random_name = random_first_name + "-" + random_last_name;
+  var random_first_name = phonetic.generate({seed: ip, syllables: 3, phoneticSimplicity: 10, compoundSimplicity: 10});
+  // var random_last_name = phonetic.generate({seed: sid, syllables: 1, phoneticSimplicity: 10, compoundSimplicity: 10});
+  var random_name = random_first_name;//+ "-" + random_last_name;
   return random_name;
 }
 
