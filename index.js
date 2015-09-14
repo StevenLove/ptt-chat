@@ -299,7 +299,7 @@ function Transform(chat_message){
   var text = chat_message.original_text;
   var options = {};
 
-  if(mode === "LocalGoogleImages"){
+  if(mode === "LocalGoogleImages" || mode ==="Images"){
     EmitImageChatMessage(chat_message);
   }
   else if(mode === "ServerGoogleImages"){
@@ -323,7 +323,7 @@ function Transform(chat_message){
       PartsOfSpeechCallback(chat_message)
     );
   }
-  else if (mode === "Scotranslate"){
+  else if (mode === "Scots"){
     transformer.Scotranslate(
       text,
       options,
@@ -484,10 +484,10 @@ function EmitChatbotResponseToAll(message){
         timestamp: new Date().getTime(),
         author_name: "Chatbot Lauren",
         author_id: BOTID,
-        transform_list: ["None"],
+        transform_list: ["LocalGoogleImages"],
         taget: "Humans",
         original_text: bot_text,
-        is_images: false,
+        is_images: true,
       }
 
       OnChatMessage(chatbot_chat_message);

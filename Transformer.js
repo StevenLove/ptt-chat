@@ -2,24 +2,21 @@ var Transformer = function(){
   var self = this;
 
   var app = require('express')();
-  var http = require('http');
-  var querystring = require('querystring');
-  var request = require('request');
-  // var googleimages = require('google-images');
-  var WordNet = require('node-wordnet');
-  // var Bing = require('node-bing-api')({ accKey:"***REMOVED***"});
-
   var async = require('async');
+  var secrets = require('./secrets.js');
+
+  var ms_translation_secret = secrets.ms_translation_secret;
+  var bing_image_key = secrets.bing_image_key;
+  var idilia_secret = secrets.idilia_secret;
+
 
   var ImageSearch = require('./ImageSearch.js');
-  var image_search = new ImageSearch();
+  var image_search = new ImageSearch(bing_image_key);
 
   var ms_translate = require('./ms_translate.js');
-  var translation_client_secret = "***REMOVED***";
-  var ms_translate_instance = new ms_translate(translation_client_secret);
+  var ms_translate_instance = new ms_translate(ms_translation_secret);
 
   var idilia_paraphrase = require('./idilia_paraphrase.js');
-  var idilia_secret = "***REMOVED***";
   var idilia_paraphrase_instance = new idilia_paraphrase(idilia_secret);
 
   var Synonymizer = require('./Synonymizer.js');

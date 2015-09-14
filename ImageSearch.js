@@ -1,5 +1,5 @@
-var ImageSearch = function(){
-  var Bing = require('node-bing-api')({ accKey:"***REMOVED***"});
+var ImageSearch = function(bing_image_key){
+  var Bing = require('node-bing-api')({ accKey:bing_image_key});
   var googleimages = require('google-images');
   var async = require('async');
 
