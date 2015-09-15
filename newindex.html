@@ -633,14 +633,15 @@ var FacebookLoggedOutCallback = function(){
   }
 
   var GenerateAudioPlayer = function(src){
-    var html = $("<audio autoplay><source id = 'audio_source' src='"+src+"'</audio>");
+    var html = $("<audio controls autoplay><source id = 'audio_source' src='"+src+"'</audio>");
     return html;
   }
   var SpeakMessage = function(chat_message){
     console.log("SPEAKMESSAGE");
     var msg = GenerateMsgHTML();
     var url = chat_message["url"];
-    $("#audio_container").replaceWith(GenerateAudioPlayer(url));
+    msg.append(GenerateAudioPlayer(url));
+    // $("#audio_container").replaceWith(GenerateAudioPlayer(url));
     return msg;
   }
 

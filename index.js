@@ -511,7 +511,7 @@ function EmitChatbotResponseToAll(message){
         timestamp: new Date().getTime(),
         author_name: "Chatbot Lauren",
         author_id: BOTID,
-        transform_list: ["LocalGoogleImages"],
+        transform_list: ["Speak"],
         taget: "Humans",
         original_text: bot_text,
         is_images: true,
