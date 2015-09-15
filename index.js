@@ -306,6 +306,11 @@ var SpeakCallback = function(chat_message){
   }
 }
 
+var LogCallback = function(err, response){
+  console.log("ERROR: " + JSON.stringify(err));
+  console.log("RESPO: " + JSON.stringify(response));
+}
+
 function Transform(chat_message){
   var mode = chat_message.transform_list[0];
   var text = chat_message.original_text;
@@ -341,7 +346,9 @@ function Transform(chat_message){
   }
   else if (mode === "Speak"){
     console.log("SPEAK");
-    transformer.Speak(text, "en", SpeakCallback(chat_message));
+    transformer.DetectLanguage(text, function(err, result){
+      transformer.Speak(text, result["language"], SpeakCallback(chat_message));
+    })
   }
   else if (mode === "Scots"){
     transformer.Scotranslate(
@@ -349,6 +356,9 @@ function Transform(chat_message){
       options,
       TranslatedCallback(chat_message)
     );
+  }
+  else if(mode === "DetectLanguage"){
+    transformer.DetectLanguage(text,LogCallback);
   }
   else if(mode === "Spanish"){
     transformer.Transform(

@@ -186,6 +186,8 @@ var Transformer = function(){
 
   self.Scotranslate = scots_translator.Translate;
 
+  self.DetectLanguage = ms_translate_instance.DetectLanguage;
+
   /* Helpers */
 
   var RemoveDuplicatesAndFalsies = function(array){

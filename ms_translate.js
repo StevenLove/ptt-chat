@@ -147,6 +147,56 @@ var ms_translate = function(client_secret){
     };
   }
 
+
+  var ConsumeAPI = function(base_url, GET_params, callback){
+    console.log("CONSUMING: " + base_url + " WITH " + JSON.stringify(GET_params))
+    request(
+      {
+        "url":base_url,
+        "qs": GET_params
+      }, 
+      callback
+    );
+  }
+
+  var DetectLanguage = function(text, callback){
+    async.waterfall([
+      GetAccessToken,
+      async.apply(
+        async.asyncify(DetectRequest),
+        text
+      ),
+      ConsumeDetectLanguageAPI,
+      DetectReturn,  
+      function(result){
+        callback(NO_ERROR, result);
+      }
+      ]);
+  }
+
+  var DetectRequest = function(text, token){
+    return {
+      "text": text,
+      "token_body": token["body"]
+    };
+  }
+
+  var DetectReturn = function(response, body, callback){
+    var result = {
+      "language": StripQuotes(body).trim()
+    };
+    callback(NO_ERROR,result);
+  }
+
+  var ConsumeDetectLanguageAPI = function(detect_req, callback){
+    var base_url = "http://api.microsofttranslator.com/V2/Ajax.svc/Detect";
+    var GET_params = {
+      "appId": "Bearer "+detect_req["token_body"],
+      "text": detect_req["text"]
+    };
+    ConsumeAPI(base_url,GET_params,callback);
+  }
+
   var ConsumeSpeechAPI = function(speech_req, callback){
     var base_url = "http://api.microsofttranslator.com/V2/Ajax.svc/Speak";
     var GET_params = {
@@ -157,7 +207,7 @@ var ms_translate = function(client_secret){
     var options = {
       "url":base_url, 
       "qs": GET_params
-    }
+    };
     request(options,callback);
   }
 
@@ -178,24 +228,23 @@ var ms_translate = function(client_secret){
     // callback (err, url of the speech)
   var Speechify = function(text, language, callback){
     async.waterfall([
-        function(async_cb){
-          GetAccessToken(async_cb);
-        }
-        ,
-        function(token, async_cb){
-          var speech_req = CreateSpeechRequestObject(text,language, token);
-          async_cb(NO_ERROR,speech_req);
-        },
-        ConsumeSpeechAPI,
-        function(what, url, async_cb){
-          var result = ParseConsumeSpeechAPI(url);
-          async_cb(NO_ERROR, result);
-        },
-        function(result, async_cb){
-          console.log(result);
-          callback(NO_ERROR,result);
-        }
+      GetAccessToken,
+      async.apply(
+        async.asyncify(CreateSpeechRequestObject),
+        text,
+        language
+      ),
+      ConsumeSpeechAPI,
+      SpeechReturn,
+      function(result){
+        callback(NO_ERROR,result);
+      }
     ]);
+  }
+
+  var SpeechReturn = function(response, body, callback){
+    var result = ParseConsumeSpeechAPI(body);
+    callback(NO_ERROR,result);
   }
 
   var ConsumeTranslationAPI = function(text,from,to,access_token,api_response_callback){
@@ -351,6 +400,7 @@ var ms_translate = function(client_secret){
   // });
 
   self.Speechify = Speechify;
+  self.DetectLanguage = DetectLanguage;
 };
 
 module.exports = ms_translate;
