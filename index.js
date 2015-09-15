@@ -10,17 +10,6 @@ var Transformer = require('./Transformer.js');
 var transformer = new Transformer();
 
 
-var buffer = {};
-buffer.array = [];
-buffer.max = 50;
-buffer.push = function(msg){
-  buffer.array.push(msg);
-  if(buffer.array.length > buffer.max){
-    buffer.array.shift();
-  }
-}
-
-var active_users = {};
 
 var cust_id;
 // Lauren
@@ -28,21 +17,6 @@ const BOTID = "f6d4afd83e34564d";
 // Chomsky
 // const BOTID = "b0dafd24ee35a477";
 
-
-
-function AddUser(user){
-  active_users.push(user);
-}
-function RemoveUser(socket_id){
-  for(var index in active_users){
-    var user = active_users[index];
-    var cur_id = user.socket_id;
-    if(socket_id==cur_id){
-      active_users.splice(index,1);
-      return;
-    }
-  }
-}
 
 app.get('/', function(req,res){
   res.sendFile(__dirname + '/newindex.html');
@@ -132,21 +106,65 @@ app_http.listen(3000,function(){
   console.log('listening on *:3000');
 });
 
+
+
+  /* Sockets */
+
+function OnChatMessage(chat_message){
+    chat_message = JSON.parse(JSON.stringify(chat_message));
+    if(IsDirectedAtBot(chat_message)){
+      EmitChatbotResponseToAll(chat_message.original_text);
+    }
+    Transform(chat_message);
+}
+
+var EmitChatMessage = function(chat_message){
+  io.emit("chat message", chat_message);
+  stored_messages.push(chat_message);
+}
+
+var EmitImageChatMessage = function(chat_message){
+  chat_message.is_images = true;
+  EmitChatMessage(chat_message);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* User Management */
+
+var active_users = {};
+
+function AddUser(user){
+  active_users.push(user);
+}
+function RemoveUser(socket_id){
+  for(var index in active_users){
+    var user = active_users[index];
+    var cur_id = user.socket_id;
+    if(socket_id==cur_id){
+      active_users.splice(index,1);
+      return;
+    }
+  }
+}
+
 function UpdateUserList(){
   console.log(NumUsers());
   console.log(active_users);
   io.emit("update users", active_users);
 }
-
-function RecapMessagesInBuffer(socket) {
-  if(buffer.array.length){
-    for( var key in buffer.array){
-      var msg = buffer.array[key];
-      console.log(msg);
-      socket.emit('chat message', msg);
-    }
-  }
-};
 
 function Disconnect(socket){
   console.log('user disconnected');
@@ -188,18 +206,10 @@ function DeregisterUser(socket){
   UpdateUserList();
 }
 
-function GenerateName(user){
-  var ip = user.ip;
-  var sid = user.socket_id;
-  var random_first_name = phonetic.generate({seed: ip, syllables: 3, phoneticSimplicity: 10, compoundSimplicity: 10});
-  // var random_last_name = phonetic.generate({seed: sid, syllables: 1, phoneticSimplicity: 10, compoundSimplicity: 10});
-  var random_name = random_first_name;//+ "-" + random_last_name;
-  return random_name;
-}
-
 function NumUsers(){
   return Object.keys(active_users).length;
 }
+
 function TooManyUsers(){
   var num_users = NumUsers();
   // console.log(num_users + " users");
@@ -211,41 +221,71 @@ function TooManyUsers(){
 
 
 
-function OnChatMessage(chat_message){
-    console.log(chat_message);
-    chat_message = JSON.parse(JSON.stringify(chat_message));
-    if(IsDirectedAtBot(chat_message)){
-      EmitChatbotResponseToAll(chat_message.original_text);
+
+
+
+
+
+
+
+
+
+  /* Stored Messages */
+
+var stored_messages = {};
+stored_messages.buffer = [];
+stored_messages.max = 50;
+
+stored_messages.push = function(msg){
+  stored_messages.buffer.push(msg);
+  if(stored_messages.buffer.length > stored_messages.max){
+    stored_messages.buffer.shift();
+  }
+}
+
+function RecapMessagesInBuffer(socket) {
+  if(stored_messages.buffer.length){
+    for( var key in stored_messages.buffer){
+      var msg = stored_messages.buffer[key];
+      console.log(msg);
+      socket.emit('chat message', msg);
     }
-    Transform(chat_message);
-}
-
-
-
-
-function GetRandomElement(array){
-  var max = array.length;
-  if(max<1){
-    return [];
   }
-  else{
-    var index = Math.floor(Math.random()*max);
-    return array[index];
-  }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+/* Random Name */
+
+function GenerateName(user){
+  var ip = user.ip;
+  var sid = user.socket_id;
+  var random_first_name = phonetic.generate({seed: ip, syllables: 3, phoneticSimplicity: 10, compoundSimplicity: 10});
+  // var random_last_name = phonetic.generate({seed: sid, syllables: 1, phoneticSimplicity: 10, compoundSimplicity: 10});
+  var random_name = random_first_name;//+ "-" + random_last_name;
+  return random_name;
 }
 
 
 
-var EmitChatMessage = function(chat_message){
-  io.emit("chat message", chat_message);
-  buffer.push(chat_message);
-}
 
-var EmitImageChatMessage = function(chat_message){
-  chat_message.is_images = true;
-  EmitChatMessage(chat_message);
-}
 
+
+
+
+
+
+
+  /* Callbacks */
 
 var ServerBingImagesCallback = function(chat_message){
   return function(err, response){
@@ -289,19 +329,14 @@ var TranslatedCallback = function(chat_message){
   return function(err, response){
     var result = response["text"];
     chat_message.transformed_text = result;
-    io.emit("chat message", chat_message);
-    buffer.push(chat_message);
-    // EmitChatMessage(chat_message);
+    EmitChatMessage(chat_message);
   }
 }
 
 var SpeakCallback = function(chat_message){
   return function(err, response){
-    console.log("RESPONSE: \"" + response+ "\"");
-    // chat_message.transformed_text = response;
     chat_message["url"] = response;
     chat_message["type"] = "Speak";
-    console.log(chat_message);
     EmitChatMessage(chat_message);
   }
 }
@@ -310,6 +345,12 @@ var LogCallback = function(err, response){
   console.log("ERROR: " + JSON.stringify(err));
   console.log("RESPO: " + JSON.stringify(response));
 }
+
+
+
+
+
+
 
 function Transform(chat_message){
   var mode = chat_message.transform_list[0];
@@ -347,6 +388,7 @@ function Transform(chat_message){
   else if (mode === "Speak"){
     console.log("SPEAK");
     transformer.DetectLanguage(text, function(err, result){
+      console.log("LANGUAGE DETECTED: " + JSON.stringify(result));
       transformer.Speak(text, result["language"], SpeakCallback(chat_message));
     })
   }
@@ -410,13 +452,16 @@ function Transform(chat_message){
           result = ParseSmartSynonymize(succ);
         }
         chat_message.transformed_text = result;
-        io.emit("chat message", chat_message);
-        buffer.push(chat_message);
+        EmitChatMessage(chat_message);
       }
     );
   }
 
 }
+
+  /* Parsing APIs */
+
+
 var ParseImageSet = function(success){
   var results = [];
   success.forEach(function(set){
@@ -451,6 +496,10 @@ var ParseSmartSynonymize = function(success){
 
 
 
+
+
+
+  /* Chatbot */
 
 function IsDirectedAtBot(unsplit_chat_message){
   var result = false;
@@ -532,4 +581,24 @@ function EmitChatbotResponseToAll(message){
   }).on('error', function(e) {
       console.log("PB GET Got error: ", e);
   });
+}
+
+
+
+
+
+
+
+
+  /* Helper */
+
+function GetRandomElement(array){
+  var max = array.length;
+  if(max<1){
+    return [];
+  }
+  else{
+    var index = Math.floor(Math.random()*max);
+    return array[index];
+  }
 }

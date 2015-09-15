@@ -149,7 +149,6 @@ var ms_translate = function(client_secret){
 
 
   var ConsumeAPI = function(base_url, GET_params, callback){
-    console.log("CONSUMING: " + base_url + " WITH " + JSON.stringify(GET_params))
     request(
       {
         "url":base_url,
@@ -182,8 +181,9 @@ var ms_translate = function(client_secret){
   }
 
   var DetectReturn = function(response, body, callback){
+    var lang= StripQuotes(body).trim();
     var result = {
-      "language": StripQuotes(body).trim()
+      "language": lang
     };
     callback(NO_ERROR,result);
   }
@@ -212,9 +212,7 @@ var ms_translate = function(client_secret){
   }
 
   var ParseConsumeSpeechAPI = function(body){
-    console.log("BODY : " + body);
     var decoded = StripBackslashes(StripQuotes(body)).trim();
-    console.log("DECODED : " + decoded);
     return decoded;
   }
 
@@ -235,16 +233,26 @@ var ms_translate = function(client_secret){
         language
       ),
       ConsumeSpeechAPI,
-      SpeechReturn,
+      SpeechReturner(text,callback),
       function(result){
         callback(NO_ERROR,result);
       }
     ]);
   }
 
-  var SpeechReturn = function(response, body, callback){
-    var result = ParseConsumeSpeechAPI(body);
-    callback(NO_ERROR,result);
+  var SpeechReturner = function(text, cb){
+    return function(response, body, callback){
+      if(LanguageNameNotSupported(response)){
+        Speechify(text, "en", cb);
+      }
+      var result = ParseConsumeSpeechAPI(body);
+      callback(NO_ERROR,result);
+    }
+  }
+
+  var LanguageNameNotSupported = function(http_response){
+    var sought_string = "ArgumentOutOfRangeException: Language name is not supported";
+    return (http_response["body"].indexOf(sought_string) != -1);
   }
 
   var ConsumeTranslationAPI = function(text,from,to,access_token,api_response_callback){
