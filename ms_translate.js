@@ -2,6 +2,7 @@ var ms_translate = function(client_secret){
 
   var querystring = require('querystring');
   var request = require('request');
+  var async = require('async');
 
   var self = this;
   self.access_token = undefined;
@@ -138,6 +139,65 @@ var ms_translate = function(client_secret){
     return false;
   }
 
+  var CreateSpeechRequestObject = function(text, language, token){
+    return {
+      "text": text,
+      "language": language,
+      "token_body": token["body"]
+    };
+  }
+
+  var ConsumeSpeechAPI = function(speech_req, callback){
+    var base_url = "http://api.microsofttranslator.com/V2/Ajax.svc/Speak";
+    var GET_params = {
+      "language": speech_req["language"],
+      "text": speech_req["text"],
+      "appId": "Bearer "+speech_req["token_body"]
+    };
+    var options = {
+      "url":base_url, 
+      "qs": GET_params
+    }
+    request(options,callback);
+  }
+
+  var ParseConsumeSpeechAPI = function(body){
+    console.log("BODY : " + body);
+    var decoded = StripBackslashes(StripQuotes(body)).trim();
+    console.log("DECODED : " + decoded);
+    return decoded;
+  }
+
+  var StripBackslashes = function(text){
+    return text.replace(/\\/g,"");
+  }
+  var StripQuotes = function(text){
+    return text.replace(/\"/g,"");
+  }
+
+    // callback (err, url of the speech)
+  var Speechify = function(text, language, callback){
+    async.waterfall([
+        function(async_cb){
+          GetAccessToken(async_cb);
+        }
+        ,
+        function(token, async_cb){
+          var speech_req = CreateSpeechRequestObject(text,language, token);
+          async_cb(NO_ERROR,speech_req);
+        },
+        ConsumeSpeechAPI,
+        function(what, url, async_cb){
+          var result = ParseConsumeSpeechAPI(url);
+          async_cb(NO_ERROR, result);
+        },
+        function(result, async_cb){
+          console.log(result);
+          callback(NO_ERROR,result);
+        }
+    ]);
+  }
+
   var ConsumeTranslationAPI = function(text,from,to,access_token,api_response_callback){
     const api_url = 'http://api.microsofttranslator.com/V2/Ajax.svc/Translate';
     const auth_prefix = "Bearer ";
@@ -185,7 +245,7 @@ var ms_translate = function(client_secret){
       return(lifetime <= self.time_to_live);
     }
     self.ToString = function(){
-      return "\"" + token_body.slice(0,40) + "...\""
+      return "\"\n" + self.body+  "\n\""
     }
     console.log("New access token: " + self.ToString());
 
@@ -285,6 +345,12 @@ var ms_translate = function(client_secret){
     }
     return string;
   }
+
+  // console.log("loading multiple times for no reason");
+  // Speechify("hello world", "en", function(err, url){
+  // });
+
+  self.Speechify = Speechify;
 };
 
 module.exports = ms_translate;

@@ -291,6 +291,18 @@ var TranslatedCallback = function(chat_message){
     chat_message.transformed_text = result;
     io.emit("chat message", chat_message);
     buffer.push(chat_message);
+    // EmitChatMessage(chat_message);
+  }
+}
+
+var SpeakCallback = function(chat_message){
+  return function(err, response){
+    console.log("RESPONSE: \"" + response+ "\"");
+    // chat_message.transformed_text = response;
+    chat_message["url"] = response;
+    chat_message["type"] = "Speak";
+    console.log(chat_message);
+    EmitChatMessage(chat_message);
   }
 }
 
@@ -298,6 +310,10 @@ function Transform(chat_message){
   var mode = chat_message.transform_list[0];
   var text = chat_message.original_text;
   var options = {};
+
+  console.log("PERFORMING TRANSFORM");
+  console.log("  " + text);
+  console.log("  " + mode);
 
   if(mode === "LocalGoogleImages" || mode ==="Images" || mode === "PugImages"){
     EmitImageChatMessage(chat_message);
@@ -323,6 +339,10 @@ function Transform(chat_message){
       PartsOfSpeechCallback(chat_message)
     );
   }
+  else if (mode === "Speak"){
+    console.log("SPEAK");
+    transformer.Speak(text, "en", SpeakCallback(chat_message));
+  }
   else if (mode === "Scots"){
     transformer.Scotranslate(
       text,
@@ -334,6 +354,13 @@ function Transform(chat_message){
     transformer.Transform(
       text,
       {"mode": "Translate", "from":"en", "to":"es"},
+      TranslatedCallback(chat_message)
+    );
+  }
+  else if(mode === "German"){
+    transformer.Transform(
+      text,
+      {"mode": "Translate", "from":"en", "to":"de"},
       TranslatedCallback(chat_message)
     );
   }

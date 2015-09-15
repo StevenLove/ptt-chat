@@ -63,9 +63,6 @@ var Transformer = function(){
 
 
   self.Transform = function(text, options, callback){
-    console.log("PERFORMING TRANSFORM");
-    console.log("  " + text);
-    console.log("  " + JSON.stringify(options));
     var f;
     switch(options.mode){
       case "Translate":
@@ -184,6 +181,8 @@ var Transformer = function(){
       LogAndPassCallback(callback)
     );
   }
+
+  self.Speak = ms_translate_instance.Speechify;
 
   self.Scotranslate = scots_translator.Translate;
 

@@ -138,6 +138,9 @@
                 <li>
                     <div id="branding" ></div>
                 </li>
+                <li>
+                  <div id="audio_container"></div>
+                </li>
             </ul>
         </div>
         <!-- /#sidebar-wrapper -->
@@ -263,7 +266,7 @@ var FacebookLoggedOutCallback = function(){
 
 
       function PopulateTransformDropdown(){
-        var options = ["None", "Synonymize", "Antonymize", "SmartSynonymize","Spanish","Images", "Paraphrase", "Scots", "PugImages"];
+        var options = ["None", "Images", "Synonymize", "Antonymize", "SmartSynonymize" , "Paraphrase", "Spanish", "Scots", "German", "Speak", "PugImages"];
         options.forEach(function(option){
           $("#transform_dropdown").append("<option value = " + option +">" + option + "</option>");
         });
@@ -598,6 +601,9 @@ var FacebookLoggedOutCallback = function(){
   /* Messages */
 
   var Msg = function(chat_message){
+    if(IsSpeakMessage(chat_message)){
+      return SpeakMessage(chat_message);
+    }
     if(IsTextMessage(chat_message)){
       return TextMsg(chat_message);
     }
@@ -611,6 +617,11 @@ var FacebookLoggedOutCallback = function(){
   // var IsPugImageMessage = function(chat_message){
   //   return chat_message.transformation_list =]
   // }
+
+  var IsSpeakMessage = function(chat_message){
+    return chat_message["type"] === "Speak";
+  }
+
   var IsLocalImageMessage = function(chat_message){
     return chat_message.is_images && !chat_message.image_url_lists;
   }
@@ -619,6 +630,18 @@ var FacebookLoggedOutCallback = function(){
   }
   var IsTextMessage = function(chat_message){
     return !chat_message.is_images;
+  }
+
+  var GenerateAudioPlayer = function(src){
+    var html = $("<audio autoplay><source id = 'audio_source' src='"+src+"'</audio>");
+    return html;
+  }
+  var SpeakMessage = function(chat_message){
+    console.log("SPEAKMESSAGE");
+    var msg = GenerateMsgHTML();
+    var url = chat_message["url"];
+    $("#audio_container").replaceWith(GenerateAudioPlayer(url));
+    return msg;
   }
 
   var TextMsg = function(chat_message){
