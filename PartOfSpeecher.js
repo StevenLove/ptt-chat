@@ -4,7 +4,7 @@ var PartOfSpeecher = function(){
 
   
 
-  var PartOfSpeechify = function(text, options, callback){
+  var PartOfSpeechify = function(text, callback){
     ConsumePartOfSpeechAPI(
       text,
       function(err, response, body){
@@ -83,6 +83,7 @@ var PartOfSpeecher = function(){
   }
 
   this.PartOfSpeechify = PartOfSpeechify;
+  this.ToLayPartOfSpeech = ToLayPartOfSpeech;
 }
 
 module.exports = PartOfSpeecher;
