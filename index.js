@@ -10,101 +10,72 @@ var Transformer = require('./Transformer.js');
 var transformer = new Transformer();
 
 
+  /* Hosting */
 
-var cust_id;
-// Lauren
-const BOTID = "f6d4afd83e34564d";
-// Chomsky
-// const BOTID = "b0dafd24ee35a477";
-
-
-app.get('/', function(req,res){
-  res.sendFile(__dirname + '/newindex.html');
-});
-
-// app.get('/facebook.js',function(req,res){
-//   res.sendFile(__dirname + '/facebook.js');
-// });
-
-// app.get('/css/')
-app.use(express.static('public'));
-
-function ListUsers(socket){
-  for(var index in active_users){
-    var user = active_users[index];
-    socket.emit("connection message", user);
-  }
+var HostFile = function(web_path, rel_fs_path){
+  app.get(
+    web_path,
+    function(req,res){
+      res.sendFile(__dirname + rel_fs_path);
+    }
+  );
+}
+var HostStaticFolder = function(folder){
+  app.use(
+    express.static(folder)
+  );
+}
+var HostOnPort = function(port_no){
+  app_http.listen(port_no,function(){
+    console.log('listening on *:' + port_no);
+  });
 }
 
-console.log("IO: " + io);
+HostOnPort(3000);
+HostFile('/','/newindex.html');
+HostStaticFolder('public');
 
+
+
+
+  /* Sockets */
 
 io.on('connection', function(socket){
 
-  // console.log('a user connected');
-
-  // ListUsers(socket);
-
-  // var ip = socket.request.connection.remoteAddress;
-  // var random_name = phonetic.generate({seed: ip});
-  // socket.emit('ip',ip);
-  // socket.emit('random name', random_name);
-
-  // var this_user = {};
-  // active_users[socket_id] = this_user;
-  // this_user.socket_id = socket.id;
-  // this_user.ip = ip;
-  // this_user.random_name = random_name;
 
   if(TooManyUsers()){
     // some sort of warning or error or apology
     return;
   }
+  else{
+    Connect(socket);
 
+    socket.on('facebook login', function(fresponse){
+      FacebookUserLogin(socket,fresponse);
+    });
 
-   RegisterUser(socket);
+    socket.on('facebook logout', function(){
+      FacebookUserLogout(socket);
+    });
 
-  // this.id = ip;
-  // this.name = random_name
+    socket.on('chat message', function(msg){
+      OnChatMessage(msg);
+    });
 
-  // var this_user = {user_id: this.id, user_name: this.name};
-  // AddUser(this_user);
-  // io.emit("connection message",this_user);
+    socket.on('disconnect', function(){
+      Disconnect(socket);
+    });
 
-  socket.on('facebook login', function(fresponse){
-    var fid = fresponse.id;
-    var fname = fresponse.name;
-    FacebookUserLogin(socket,fid,fname);
-  });
-  socket.on('facebook logout', function(){
-    FacebookUserLogout(socket);
-  });
-
-  socket.on('splittable chat message', function(unsplit_chat_message){
-    OnSplittableMessage(unsplit_chat_message);
-    if(IsDirectedAtBot(unsplit_chat_message)){
-      EmitChatbotResponseToAll(unsplit_chat_message.original_text);
-    }
-  });
-
-  socket.on('chat message', function(msg){
-    OnChatMessage(msg);
-  });
-
-  socket.on('disconnect', function(){
-    Disconnect(socket);
-  });
-
-  socket.on('init',function(){
-    RecapMessagesInBuffer(socket);
-  });
-
+    socket.on('init',function(){
+      RecapMessagesInBuffer(socket);
+    });
+  }
 });
 
 
-app_http.listen(3000,function(){
-  console.log('listening on *:3000');
-});
+
+
+
 
 
 
@@ -120,16 +91,29 @@ function OnChatMessage(chat_message){
 
 var EmitChatMessage = function(chat_message){
   io.emit("chat message", chat_message);
+}
+
+var EmitAndStoreChatMessage = function(chat_message){
+  EmitChatMessage(chat_message);
+  StoreChatMessage(chat_message);
+}
+
+var StoreChatMessage = function(chat_message){
   stored_messages.push(chat_message);
 }
 
-var EmitImageChatMessage = function(chat_message){
-  chat_message.is_images = true;
-  EmitChatMessage(chat_message);
+// var EmitImageChatMessage = function(chat_message){
+//   chat_message.is_images = true;
+//   EmitChatMessage(chat_message);
+// }
+
+
+var GetIP = function(socket){
+  return socket.request.connection.remoteAddress;
 }
-
-
-
+var GetID = function(socket){
+  return socket.id;
+}
 
 
 
@@ -144,70 +128,82 @@ var EmitImageChatMessage = function(chat_message){
 
 /* User Management */
 
-var active_users = {};
+var active_users = {
+  // socket_id: unique identifier
+  // ip: user's IP address
+  // random_name: randomly generated name
+  // name: name to be displayed in that chat room
+  // 
+  // fid: unique facebook user id
+  // fname: user's name on facebook
+};
 
-function AddUser(user){
-  active_users.push(user);
+var User = function(sid,ip){
+  var random_name = GenerateName(ip);
+  return {
+    "socket_id": sid,
+    "ip": ip,
+    "random_name": random_name,
+    "name": random_name
+  };
 }
-function RemoveUser(socket_id){
-  for(var index in active_users){
-    var user = active_users[index];
-    var cur_id = user.socket_id;
-    if(socket_id==cur_id){
-      active_users.splice(index,1);
-      return;
+
+var Connect = function(socket){
+
+  var RegisterUser = function(socket){
+
+    var EmitUserInfo = function(socket, user){
+      socket.emit('ip', user["ip"]);
+      socket.emit('random name', user["random_name"]);
     }
+
+    var sid = GetID(socket);
+    var ip = GetIP(socket);
+    var user = User(sid, ip);
+    active_users[sid] = user
+    UpdateUserList();
+    EmitUserInfo(socket,user);
   }
+
+  console.log("user connected");
+  RegisterUser(socket);
+}
+
+
+
+var Disconnect = function(socket){
+
+  var DeregisterUser = function(socket){
+    delete active_users[socket.id];
+    UpdateUserList();
+  }
+
+  console.log('user disconnected');
+  DeregisterUser(socket);
+}
+
+function FacebookUserLogin(socket, fresponse){
+  var fid = fresponse.id;
+  var fname = fresponse.name;
+  var user = active_users[socket["id"]];
+  user["fid"] = fid;
+  user["fname"] = fname;
+  user["name"] = fname;
+  UpdateUserList();
+}
+
+function FacebookUserLogout(socket){
+  var user = active_users[socket["id"]];
+  user["fid"] = undefined;
+  user["fname"] = undefined;
+  user["name"] = user["random_name"];
+  UpdateUserList();
 }
 
 function UpdateUserList(){
   console.log(NumUsers());
   console.log(active_users);
   io.emit("update users", active_users);
-}
-
-function Disconnect(socket){
-  console.log('user disconnected');
-  DeregisterUser(socket);
-}
-
-function RegisterUser(socket){
-  var ip = socket.request.connection.remoteAddress;
-  var sid = socket.id;
-  var this_user = {};
-  this_user.socket_id = sid;
-  this_user.ip = ip;
-  var random_name = GenerateName(this_user);
-  this_user.random_name = random_name;
-  this_user.name = random_name;
-  active_users[sid] = this_user;
-  UpdateUserList();
-
-  socket.emit('ip',ip);
-  socket.emit('random name', random_name);
-}
-
-function FacebookUserLogin(socket, fid, fname){
-  active_users[socket.id].fid = fid;
-  active_users[socket.id].fname = fname;
-  active_users[socket.id].name = fname;
-  UpdateUserList();
-}
-
-function FacebookUserLogout(socket){
-  active_users[socket.id].fid = undefined;
-  active_users[socket.id].fname = undefined;
-  active_users[socket.id].name = active_users[socket.id].random_name;
-  UpdateUserList();
-}
-
-function DeregisterUser(socket){
-  delete active_users[socket.id];
-  UpdateUserList();
-}
-
-function NumUsers(){
-  return Object.keys(active_users).length;
 }
 
 function TooManyUsers(){
@@ -219,6 +215,9 @@ function TooManyUsers(){
   return false;
 }
 
+var NumUsers = function(){
+  return Object.keys(active_users).length;
+}
 
 
 
@@ -234,9 +233,10 @@ function TooManyUsers(){
 
 var stored_messages = {};
 stored_messages.buffer = [];
-stored_messages.max = 50;
+stored_messages.max = 10;
 
 stored_messages.push = function(msg){
+  msg["recap"] = true;
   stored_messages.buffer.push(msg);
   if(stored_messages.buffer.length > stored_messages.max){
     stored_messages.buffer.shift();
@@ -244,12 +244,12 @@ stored_messages.push = function(msg){
 }
 
 function RecapMessagesInBuffer(socket) {
-  if(stored_messages.buffer.length){
-    for( var key in stored_messages.buffer){
-      var msg = stored_messages.buffer[key];
-      console.log(msg);
-      socket.emit('chat message', msg);
-    }
+  if(stored_messages.buffer.length > 0){
+    stored_messages.buffer.forEach(
+      function(message){
+        socket.emit('chat message', message);
+      }
+    );
   }
 };
 
@@ -263,17 +263,6 @@ function RecapMessagesInBuffer(socket) {
 
 
 
-
-/* Random Name */
-
-function GenerateName(user){
-  var ip = user.ip;
-  var sid = user.socket_id;
-  var random_first_name = phonetic.generate({seed: ip, syllables: 3, phoneticSimplicity: 10, compoundSimplicity: 10});
-  // var random_last_name = phonetic.generate({seed: sid, syllables: 1, phoneticSimplicity: 10, compoundSimplicity: 10});
-  var random_name = random_first_name;//+ "-" + random_last_name;
-  return random_name;
-}
 
 
 
@@ -293,7 +282,8 @@ var ServerBingImagesCallback = function(chat_message){
       console.log(err);
     }else{
       chat_message.image_url_lists = ParseImageSet(response);
-      EmitImageChatMessage(chat_message);
+      chat_message["type"] = "ServerImages";
+      EmitAndStoreChatMessage(chat_message);
     }
   }
 }
@@ -304,7 +294,8 @@ var ServerGoogleImagesCallback = function(chat_message){
       console.log(err);
     }else{
       chat_message.image_url_lists = ParseImageSet(response);
-      EmitImageChatMessage(chat_message);
+      chat_message["type"] = "ServerImages";
+      EmitAndStoreChatMessage(chat_message);
     }
   }
 }
@@ -320,7 +311,8 @@ var PartsOfSpeechCallback = function(chat_message){
           return tagged_word["penn_pos"];
         }
       ).join(" ");
-      EmitChatMessage(chat_message);
+      chat_message["type"] = "Text";
+      EmitAndStoreChatMessage(chat_message);
     }
   }
 }
@@ -329,7 +321,8 @@ var TranslatedCallback = function(chat_message){
   return function(err, response){
     var result = response["text"];
     chat_message.transformed_text = result;
-    EmitChatMessage(chat_message);
+    chat_message["type"] = "Text";
+    EmitAndStoreChatMessage(chat_message);
   }
 }
 
@@ -337,7 +330,7 @@ var SpeakCallback = function(chat_message){
   return function(err, response){
     chat_message["url"] = response;
     chat_message["type"] = "Speak";
-    EmitChatMessage(chat_message);
+    EmitAndStoreChatMessage(chat_message);
   }
 }
 
@@ -362,7 +355,8 @@ function Transform(chat_message){
   console.log("  " + mode);
 
   if(mode === "LocalGoogleImages" || mode ==="Images" || mode === "PugImages"){
-    EmitImageChatMessage(chat_message);
+    chat_message["type"]="LocalGoogleImages";
+    EmitAndStoreChatMessage(chat_message);
   }
   else if(mode === "ServerGoogleImages"){
     transformer.GoogleImages(
@@ -388,8 +382,17 @@ function Transform(chat_message){
   else if (mode === "Speak"){
     console.log("SPEAK");
     transformer.DetectLanguage(text, function(err, result){
-      console.log("LANGUAGE DETECTED: " + JSON.stringify(result));
-      transformer.Speak(text, result["language"], SpeakCallback(chat_message));
+      if(err){
+        console.log(JSON.stringify(err));
+      }
+      else{
+        console.log("LANGUAGE DETECTED: " + JSON.stringify(result));
+        transformer.Speak(
+          text,
+          result["language"],
+          SpeakCallback(chat_message)
+        );
+      }
     })
   }
   else if (mode === "Scots"){
@@ -425,8 +428,8 @@ function Transform(chat_message){
         if(!err){
           result = ParseSmartSynonymize(succ);
           chat_message.transformed_text = result;
-          io.emit("chat message", chat_message);
-          buffer.push(chat_message);
+          chat_message["type"] = "Text";
+          EmitAndStoreChatMessage(chat_message);
         }
         else{
           console.log(err);
@@ -452,7 +455,8 @@ function Transform(chat_message){
           result = ParseSmartSynonymize(succ);
         }
         chat_message.transformed_text = result;
-        EmitChatMessage(chat_message);
+        chat_message["type"] = "Text";
+        EmitAndStoreChatMessage(chat_message);
       }
     );
   }
@@ -500,6 +504,13 @@ var ParseSmartSynonymize = function(success){
 
 
   /* Chatbot */
+
+var cust_id;
+// Lauren
+const BOTID = "f6d4afd83e34564d";
+// Chomsky
+// const BOTID = "b0dafd24ee35a477";
+
 
 function IsDirectedAtBot(unsplit_chat_message){
   var result = false;
@@ -601,4 +612,15 @@ function GetRandomElement(array){
     var index = Math.floor(Math.random()*max);
     return array[index];
   }
+}
+
+function GenerateName(seed){
+  var phonetic_options = {
+    "seed": seed,
+    "syllables": 3,
+    "phoneticSimplicity": 10,
+    "compoundSimplicity": 10
+  };
+  var random_name = phonetic.generate(phonetic_options);
+  return random_name;
 }

@@ -369,12 +369,6 @@ var FacebookLoggedOutCallback = function(){
         return input;
       }
 
-      function SendSplittableMsg(msg){
-        EmitSplittableMessage(new ChatMessage(msg));
-      }
-      function EmitSplittableMessage(splittable){
-        document.socket.emit('splittable chat message', splittable);
-      }
       function ClearInput(){
         $('#m').val('');
       }
@@ -388,9 +382,6 @@ var FacebookLoggedOutCallback = function(){
           }
         });
       }
-
-
-
 
       function ChatMessage(message){
         var directed_at_bot = $("#user_dropdown").val() == EVERYONE_AND_LAUREN_ID;
@@ -626,13 +617,15 @@ var FacebookLoggedOutCallback = function(){
   }
 
   var IsLocalImageMessage = function(chat_message){
-    return chat_message.is_images && !chat_message.image_url_lists;
+    return chat_message["type"] === "LocalGoogleImages";
+    // return chat_message.is_images && !chat_message.image_url_lists;
   }
   var IsServerImageMessage = function(chat_message){
-    return chat_message.is_images && chat_message.image_url_lists;
+    return chat_message["type"] === "ServerImages";
+    // return chat_message.is_images && chat_message.image_url_lists;
   }
   var IsTextMessage = function(chat_message){
-    return !chat_message.is_images;
+    return chat_message["type"] === "Text";
   }
 
   var GenerateAudioPlayer = function(src){
