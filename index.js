@@ -462,16 +462,107 @@ var ParseSmartSynonymize = function(success){
 
 */
 
+
+  /* Creators */
+  /* These functions parse the response from the transformer and the original chat message to create the chat message to be sent out to the audience */
+
 var CreateTranslated = function(chat_message, response){
   chat_message["type"] = "Text";
   chat_message["transformed_text"] = response["text"];
   return chat_message;
 }
-
 var CreateSpeak = function(chat_message, response){
   chat_message["url"] = response["url"];
   chat_message["type"] = "Speak";
   return chat_message;
+}
+var CreateImages = function(chat_message, response){
+  chat_message["type"] = "LocalGoogleImages";
+  return chat_message;
+}
+
+var CreateSynonymize = function(chat_message, response){
+  response["words"].forEach(function(word){
+    console.log(JSON.stringify(word).slice(0,77) + "...");
+  });
+
+
+  chat_message["transformed_text"] = response["words"].map(
+    function(word){
+      word["list"].push(word["original"]);
+      return word["list"][0];
+    }
+  ).join(" ");
+  chat_message["type"] = "Text";
+  return chat_message;
+}
+
+  /* Transforms */
+  /* These functions determine the arguments for the transformer */
+
+var SpanishTransform = function(chat_message){
+  var result = {
+    "options":{
+      "text" : chat_message["original_text"],
+      "from" : "en",
+      "to" : "es"
+    },
+    "function": transformer.Translate,
+    "creator": CreateTranslated
+  };
+  return result;
+}
+
+var GermanTransform = function(chat_message){
+  var result = SpanishTransform(chat_message);
+  result["options"]["to"] = "de";
+  return result;
+}
+
+var ImagesTransform = function(chat_message){
+  var result = {
+    "options": {},
+    "function":transformer.DoNothing,
+    "creator": CreateImages
+  };
+  return result;
+}
+
+var SpeakTransform = function(chat_message){
+ var result = {
+    "options": chat_message["original_text"], //why is it called options?  because it's really just the first arg to the "function" function
+    "function": transformer.AutoSpeak,
+    "creator": CreateSpeak
+  };
+  return result;
+}
+
+var SynonymizeTransform = function(chat_message){
+  var result = {
+    "options": {
+      "text": chat_message["original_text"]
+    },
+    "function": transformer.Synonymize,
+    "creator": CreateSynonymize
+  }
+  return result;
+}
+
+var AntonymizeTransform = function(chat_message){
+  var result = SynonymizeTransform(chat_message);
+  result["options"]["ant"] = true;
+  return result;
+}
+
+var SmartSynonymizeTransform = function(chat_message){
+  var result = {
+    "options": {
+      "text": chat_message["original_text"]
+    },
+    "function": transformer.SmartSynonymize,
+    "creator": CreateSynonymize
+  }
+  return result;
 }
 
 
@@ -479,47 +570,58 @@ var CreateSpeak = function(chat_message, response){
 const SPANISH = "Spanish";
 const IMAGES = "Images";
 const SPEAK = "Speak";
+const GERMAN = "German";
+const SYNONYMIZE = "Synonymize";
+const ANTONYMIZE = "Antonymize";
+const SMARTSYNONYMIZE = "SmartSynonymize";
 
-
-// var Transform = function(mode, chat_message){
-// }
 
 var Transform = function(mode, chat_message){
-
-  var f;
-  var options = {};
-  var create;
+  var transformation;
 
   console.log(mode + " Transform");
 
   switch(mode){
     case SPANISH:
-      options = {
-        "text" : chat_message["original_text"],
-        "from" : "en",
-        "to" : "es"
-      };
-      f = transformer.Translate;
-      create = CreateTranslated;
+      transformation = SpanishTransform;
+      break;
+
+    case GERMAN:
+      transformation = GermanTransform;
       break;
 
     case IMAGES:
-      chat_message["type"] = "LocalGoogleImages";
-      EmitAndStoreChatMessage(chat_message);
-      f = function(){};
+      transformation = ImagesTransform;
       break;
 
     case SPEAK:
-      options = chat_message["original_text"];
-      f = transformer.AutoSpeak;
-      create = CreateSpeak;
+      transformation = SpeakTransform;
       break;
+
+    case SYNONYMIZE:
+      transformation = SynonymizeTransform;
+      break;
+
+    case ANTONYMIZE:
+      transformation = AntonymizeTransform;
+      break;
+
+    case SMARTSYNONYMIZE:
+      transformation = SmartSynonymizeTransform;
+      break;
+
+
 
     default:
       console.error("Unrecognized Transform: " + mode);
 
     break;
   }
+
+  var transform = transformation(chat_message);
+  var func = transform["function"];
+  var create = transform["creator"];
+  var options = transform["options"];
 
   var callback = function(err, response){
     if(err){
@@ -531,7 +633,7 @@ var Transform = function(mode, chat_message){
     }
   }
 
-  f(
+  func(
     options,
     callback
   )

@@ -14,54 +14,32 @@ var Synonymizer = function(){
 
   /* Exposed Functions */
 
-  var Synonymize = function(sentence, options, callback){
-    var words = GenerateWordItems(sentence,options);
+  var Synonymize = function(options, callback){
+    var words = GenerateWordItems(options);
     SynonymizeWordItemList(words,callback);
   }
 
 
   var MemoizedSynonymize = async.memoize(
-    function(sentence, options, callback){
+    function(options, callback){
       Synonymize(
-        sentence, 
         options, 
         function(err, result){
 
         }
       )
     },
-    function(text,options){
-      var str = text+":"+options.mode;
+    function(options){
+      var str = options["text"]+":"+options["mode"];
       return str.hashCode();
     }
   );
 
-  // var MemoizedSynonymizeOneAtATime = function(sentence, options, callback){
-  //   var words = sentence.split(" ");
-  //   var synonymized = [];
-  //   async.forEachOf(
-  //     words,
-  //     function(word,index,async_cb){
-  //       MemoizedSynonymize(
-  //         word,
-  //         options,
-  //         function(err, result){
-  //           synonymized[index] = result;
-  //           async_cb();
-  //         }
-  //       );
-  //     },
-  //     function(err){ //async_cb
-  //       if(err) console.error(err);
-  //       callback(err,CreateReturnObject(translated.join("")));
-  //     }  
-  //   );
-  // }
 
-  var SmartSynonymize = function(text, options, output_callback){
+  var SmartSynonymize = function(options, output_callback){
     async.waterfall(
       [
-        async.apply(part_of_speecher.PartOfSpeechify, text),
+        async.apply(part_of_speecher.PartOfSpeechify, options["text"]),
         async.asyncify(ConvertTaggedWordsToWordItems),
         async.apply(SynonymizeWordItemList)
       ],
@@ -72,8 +50,6 @@ var Synonymizer = function(){
   /* Successive Layers of Callbacks */
 
   var SynonymizeWordItemList = function(word_items, callback){
-    console.log("SYNONYMIZEWORDITEMLIST");
-    console.log(JSON.stringify(word_items));
     async.map(
       word_items,
       function(word_item, async_cb){
@@ -90,13 +66,13 @@ var Synonymizer = function(){
 
 
   var SynonymizeWordItem = function(word_item, callback){
-    console.log("Synonymizing " + word_item["word"] + " with options " + JSON.stringify(word_item["options"]));
+    console.log("Synonymizing " + JSON.stringify(word_item));
     ConsumeBigHugeSynonymAPI(
-      word_item["word"],
+      word_item["text"],
       function(err, response, body){
         var result = {};
         if(!err){
-          list = ParseBody(body,word_item["options"]);
+          list = ParseBody(body,word_item);
           result = GenerateResultFromWordItem(word_item,list);
         }
         callback(err,result);
@@ -107,7 +83,7 @@ var Synonymizer = function(){
   var SynonymizeWordItemMemoized = async.memoize(
     SynonymizeWordItem,
     function(word_item){
-      var str = JSON.stringify(word_item["options"])+":"+word_item["word"];
+      var str = JSON.stringify(word_item)+":"+word_item["text"];
       return str.hashCode();
     }
   );
@@ -122,19 +98,19 @@ var Synonymizer = function(){
     return word_items;
   }
 
-  var GenerateWordItems = function(text, options){
-    return text.split(" ").map(function(raw_word){
+  var GenerateWordItems = function(options){
+    return options["text"].split(" ").map(function(raw_word){
       return WordItem(raw_word, options);
     });
   }
 
   var WordItem = function(text, options, penn_pos){
-    options = (options)? options : {};
-    var item = {"word": text, "options": options};
+    var item = Clone(options);
+    item["text"] = text;
     if(penn_pos){
       item["tagged"] = true;
       item["penn_pos"] = penn_pos;
-      item["options"]["pos"] = item["lay_pos"] = part_of_speecher.ToLayPartOfSpeech(penn_pos);
+      item["lay_pos"] = part_of_speecher.ToLayPartOfSpeech(penn_pos);
     }
     return item;
   }
@@ -143,12 +119,12 @@ var Synonymizer = function(){
     // var options = Clone(preset_options);
     // options["pos"] = word_item["lay_pos"];
     // return options;
-    return word_item["options"];
+    return word_item;
   }
 
   var GenerateResultFromWordItem = function(word_item, list){
     return {
-      "original": word_item["word"],
+      "original": word_item["text"],
       "list": list
     };
   }
@@ -171,7 +147,7 @@ var Synonymizer = function(){
     var item_list = GetWordListFromAPIBody(
       get_function,
       body_obj,
-      options["pos"]
+      options["lay_pos"]
     );
     var result = RemoveDuplicatesAndFalsies(item_list);
     return result;

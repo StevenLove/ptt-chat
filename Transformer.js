@@ -110,9 +110,9 @@ var Transformer = function(){
     }
   );
 
-  var DoNothing = function(text, options, callback){
+  var DoNothing = function(text, callback){
     callback(null,text);
-  }
+  };
 
   var Translate = function(options, callback){
     ms_translate_instance.Translate(
@@ -153,26 +153,15 @@ var Transformer = function(){
     );
   }
 
-  self.Synonymize = function(text, options, callback){
-    synonymizer.Synonymize(
-      text,
-      options,
-      LogAndPassCallback(callback)
-    );
-  }
+  self.Synonymize = synonymizer.Synonymize;
 
   self.Antonymize = function(text, options, callback){
     options["ant"] = true;
     self.Synonymize(text,options,callback);
   }
 
-  self.SmartSynonymize = function(text, options, callback){
-    synonymizer.SmartSynonymize(
-      text,
-      options,
-      LogAndPassCallback(callback)
-    );
-  }
+  self.SmartSynonymize = synonymizer.SmartSynonymize;
+      
 
   self.PartOfSpeechify = function(text, options, callback){
     part_of_speecher.PartOfSpeechify(
@@ -217,6 +206,7 @@ var Transformer = function(){
     }
   }
   self.Translate = Translate;
+  self.DoNothing = DoNothing;
 }
 module.exports = Transformer;
 
