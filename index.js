@@ -86,7 +86,18 @@ function OnChatMessage(chat_message){
     if(IsDirectedAtBot(chat_message)){
       EmitChatbotResponseToAll(chat_message.original_text);
     }
-    Transform(chat_message["transform_list"][0],chat_message);
+
+    // Receive chat_message
+    // Emit a placeholder chat_message with an ID
+    // Determine which transform to apply
+    // Ask Transformer.js to apply the transform
+    // parse the response
+    // emit the transformed chat message to replace the placeholder chat_message
+
+    Transform(chat_message["transform_list"][0],chat_message, function(err, result){
+      console.log(result);
+      EmitAndStoreChatMessage(result);
+    });
 }
 
 var EmitChatMessage = function(chat_message){
@@ -227,241 +238,6 @@ function RecapMessagesInBuffer(socket) {
 };
 
 
-  /* Callbacks */
-/*
-var PartsOfSpeechCallback = function(chat_message){
-  return function(err, response){
-    if(err){
-      console.log(err);
-    }else{
-      chat_message.transformed_text = 
-      response.map(
-        function(tagged_word){
-          return tagged_word["penn_pos"];
-        }
-      ).join(" ");
-      chat_message["type"] = "Text";
-      EmitAndStoreChatMessage(chat_message);
-    }
-  }
-}
-*/
-
-/*
-var SpeakCallback = function(chat_message){
-  return function(err, response){
-    chat_message["url"] = ParseSpeak(response);;
-    chat_message["type"] = "Speak";
-    EmitAndStoreChatMessage(chat_message);
-  }
-}
-
-var LogCallback = function(err, response){
-  console.log("ERROR: " + JSON.stringify(err));
-  console.log("RESPO: " + JSON.stringify(response));
-}
-
-
-
-var ParsePartsOfSpeech = function(response){
-  return response.map(
-            function(tagged_word){
-              return tagged_word["penn_pos"];
-            }
-          ).join(" ");
-}
-
-var ParseSpeak = function(response){
-  return response["url"];
-}
-var ParseDetectLanguage = function(response){
-  return response["language"];
-}
-
-
-
-
-
-
-var TransformLocalGoogleImages = function(chat_message){
-  chat_message["type"] = "LocalGoogleImages";
-  return chat_message;
-}
-
-var TransformServerGoogleImages = function(chat_message){
-  transformer.GoogleImages(
-    chat_message.original_text,
-    {}, // options
-    ServerImagesCallback(chat_message)
-  )
-}
-
-var ServerImagesCallback = function(chat_message){
-  return function(err, response){
-    if(err){
-      console.log(err);
-    }else{
-      chat_message.image_url_lists = ParseImageSet(response);
-      chat_message["type"] = "ServerImages";
-      EmitAndStoreChatMessage(chat_message);
-    }
-  }
-}
-
-
-
-
-function Transform(chat_message){
-  var mode = chat_message.transform_list[0];
-  var text = chat_message.original_text;
-  var options = {};
-
-  console.log("PERFORMING TRANSFORM");
-  console.log("  " + text);
-  console.log("  " + mode);
-
-  if(mode === "LocalGoogleImages" || mode ==="Images" || mode === "PugImages"){
-    chat_message["type"]="LocalGoogleImages";
-    EmitAndStoreChatMessage(chat_message);
-  }
-
-
-  else if(mode === "ServerGoogleImages"){
-    transformer.GoogleImages(
-      text, 
-      options, 
-      ServerImagesCallback(chat_message)
-    );
-  }
-  else if (mode === "ServerBingImages"){
-    transformer.BingImages(
-      text,
-      options,
-      ServerImagesCallback(chat_message)
-    );
-  }
-  else if (mode === "PartsOfSpeech"){
-    transformer.PartOfSpeechify(
-      text,
-      options,
-      PartsOfSpeechCallback(chat_message)
-    );
-  }
-  else if (mode === "Speak"){
-    console.log("SPEAK");
-    transformer.DetectLanguage(text, function(err, result){
-      if(err){
-        console.log(JSON.stringify(err));
-      }
-      else{
-        console.log("LANGUAGE DETECTED: " + JSON.stringify(result));
-        transformer.Speak(
-          text,
-          result["language"],
-          SpeakCallback(chat_message)
-        );
-      }
-    })
-  }
-  else if (mode === "Scots"){
-    transformer.Scotranslate(
-      text,
-      options,
-      TranslatedCallback(chat_message)
-    );
-  }
-  else if(mode === "DetectLanguage"){
-    transformer.DetectLanguage(text,LogCallback);
-  }
-  else if(mode === "Spanish"){
-    transformer.Transform(
-      text,
-      {"mode": "Translate", "from":"en", "to":"es"},
-      TranslatedCallback(chat_message)
-    );
-  }
-  else if(mode === "German"){
-    transformer.Transform(
-      text,
-      {"mode": "Translate", "from":"en", "to":"de"},
-      TranslatedCallback(chat_message)
-    );
-  }
-  else if(mode === "Antonymize"){
-    transformer.Transform(
-      text,
-      {"mode":"Synonymize","ant":true},
-      function(err,succ){
-        var result = {};
-        if(!err){
-          result = ParseSmartSynonymize(succ);
-          chat_message.transformed_text = result;
-          chat_message["type"] = "Text";
-          EmitAndStoreChatMessage(chat_message);
-        }
-        else{
-          console.log(err);
-        }
-      }
-    );
-  }
-  else{
-    transformer.Transform(
-      text,
-      {"mode": mode},
-      function(err,succ){
-        console.log(err);
-        console.log(succ);
-        var result = succ;
-        if(mode === "Paraphrase"){
-          result = ParseParaphrased(succ);
-        }
-        if(mode === "Synonymize"){
-          result = ParseSmartSynonymize(succ);
-        }
-        if(mode === "SmartSynonymize"){
-          result = ParseSmartSynonymize(succ);
-        }
-        chat_message.transformed_text = result;
-        chat_message["type"] = "Text";
-        EmitAndStoreChatMessage(chat_message);
-      }
-    );
-  }
-
-}
-
-var ParseImageSet = function(success){
-  var results = [];
-  success.forEach(function(set){
-    results.push(set["urls"]);
-  })
-  return results;
-}
-
-var ParseParaphrased = function(success){
-  return success["text"];
-}
-var ParseSmartSynonymize = function(success){
-  var sentence = "";
-  var result = success["words"].reduce(
-    function(prev,curr){
-      var chosen_word;
-      if(curr["list"].length>0){
-        chosen_word = GetRandomElement(curr["list"]);
-      }
-      else{
-        chosen_word = curr["original"];
-      }
-      return prev + chosen_word + " ";
-    },
-    ""
-  );
-  return result.trim();
-}
-
-*/
-
 
   /* Creators */
   /* These functions parse the response from the transformer and the original chat message to create the chat message to be sent out to the audience */
@@ -483,6 +259,7 @@ var CreateImages = function(chat_message, response){
 
 var CreateText = function(chat_message, response){
   chat_message["type"] = "Text";
+  chat_message["transformed_text"] = chat_message["original_text"];
   return chat_message;
 }
 
@@ -504,8 +281,6 @@ var CreateSynonymize = function(chat_message, response){
   response["words"].forEach(function(word){
     console.log(JSON.stringify(word).slice(0,77) + "...");
   });
-
-
   chat_message["transformed_text"] = response["words"].map(
     function(word){
       word["list"].push(word["original"]);
@@ -515,6 +290,7 @@ var CreateSynonymize = function(chat_message, response){
   chat_message["type"] = "Text";
   return chat_message;
 }
+
   /* Transforms */
   /* These functions determine the arguments for the transformer */
 
@@ -671,16 +447,24 @@ var ChooseTransform = function(mode){
     case PUGIMAGES:
       transformation = PugImagesTransform;
       break;
+    case "None":
+      transformation = DoNothingTransform;
+      break;
     default:
       console.error("Unrecognized Transform: " + mode);
       transformation = DoNothingTransform;
-    break;
+      break;
   }
   return transformation;
 }
 
+var TransformChain = function(transform_list, chat_message){
+  transform_list.forEach(function(mode){
+    Transform
+  })
+}
 
-var Transform = function(mode, chat_message){
+var Transform = function(mode, chat_message, callback){
   var transformation = ChooseTransform(mode);
   console.log("\n");
   console.log(mode + " Transform on " + chat_message["original_text"]);
@@ -690,23 +474,40 @@ var Transform = function(mode, chat_message){
   var create = transform["creator"];
   var options = transform["options"];
 
-  var api_start_time = new Date();
+  // var api_start_time = new Date();
 
-  var callback = function(err, response){
-    LogAPITime(api_start_time);
-    if(err){
-      console.error("ERROR: " + JSON.stringify(err));
-    }
-    else{
-      var result = create(chat_message, response);
-      EmitAndStoreChatMessage(result);
-    }
-  }
+  // var cb = function(err, response){
+  //   LogAPITime(api_start_time);
+  //   if(err){
+  //     console.error("ERROR: " + JSON.stringify(err));
+  //     callback(err,null);
+  //   }
+  //   else{
+  //     var result = create(chat_message, response);
+  //     callback(null, result);
+  //     // EmitAndStoreChatMessage(result);
+  //   }
+  // }
 
   func(
     options,
-    callback
+    TransformCallback(chat_message, create, callback)
   );
+}
+
+var TransformCallback = function(chat_message, create, callback){
+  var api_start_time = new Date();
+  return function(err, response){
+    LogAPITime(api_start_time);
+    if(err){
+      console.error("ERROR: " + JSON.stringify(err));
+      callback(err,null);
+    }
+    else{
+      var result = create(chat_message, response);
+      callback(null, result);
+    }
+  }
 }
 
 var LogAPITime = function(api_start_time){
@@ -717,14 +518,6 @@ var LogAPITime = function(api_start_time){
   console.log("It took " + elapsed_seconds + " seconds for the API to respond.");
 }
 
-
-
-// Receive chat_message
-// Emit a placeholder chat_message with an ID
-// Determine which transform to apply
-// Ask Transformer.js to apply the transform
-// parse the response
-// emit the transformed chat message to replace the placeholder chat_message
 
 
 
@@ -840,6 +633,15 @@ function GetRandomElement(array){
   else{
     var index = Math.floor(Math.random()*max);
     return array[index];
+  }
+}
+
+var GetRandomElementBackup = function(array, backup){
+  if(!array || array.length < 1 ){
+    return backup;
+  }
+  else{
+    return GetRandomElement(array);
   }
 }
 
