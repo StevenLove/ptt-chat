@@ -496,7 +496,6 @@ var CreateSynonymize = function(chat_message, response){
   chat_message["type"] = "Text";
   return chat_message;
 }
-
   /* Transforms */
   /* These functions determine the arguments for the transformer */
 
@@ -565,6 +564,17 @@ var SmartSynonymizeTransform = function(chat_message){
   return result;
 }
 
+var ParaphraseTransform = function(chat_message){
+  var result = {
+    "options": {
+      "text": chat_message["original_text"]
+    },
+    "function": transformer.Paraphrase,
+    "creator": CreateTranslated
+  }
+  return result;
+}
+
 
 
 const SPANISH = "Spanish";
@@ -574,6 +584,7 @@ const GERMAN = "German";
 const SYNONYMIZE = "Synonymize";
 const ANTONYMIZE = "Antonymize";
 const SMARTSYNONYMIZE = "SmartSynonymize";
+const PARAPHRASE = "Paraphrase";
 
 
 var Transform = function(mode, chat_message){
@@ -610,7 +621,9 @@ var Transform = function(mode, chat_message){
       transformation = SmartSynonymizeTransform;
       break;
 
-
+    case PARAPHRASE:
+      transformation = ParaphraseTransform;
+      break;
 
     default:
       console.error("Unrecognized Transform: " + mode);

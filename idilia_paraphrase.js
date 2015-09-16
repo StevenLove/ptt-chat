@@ -78,10 +78,8 @@ var idilia_paraphrase = function(key){
     );
   }
   // We split up sentences of more than 8 tokens and make repeated calls to the API, since it accepts a max of 8 tokens.
-  self.Paraphrase = function(text,paraphrased_text_callback){
-    console.log("IDILIA PARAPHRASE");
-    console.log(text);
-
+  self.Paraphrase = function(options,paraphrased_text_callback){
+    var text = options["text"];
     var query_list = SplitToParaphraseQueries(text);
     var paraphrased_chunks = [];
     async.forEachOf(
@@ -92,7 +90,6 @@ var idilia_paraphrase = function(key){
           function(err, paraphrased_chunk){
             if(err) return callback(err);
             paraphrased_chunks[query_index] = paraphrased_chunk;
-            console.log("chunk: " +paraphrased_chunk);
             callback(NO_ERROR);
           }
         );
@@ -151,6 +148,7 @@ var idilia_paraphrase = function(key){
     return paraphrases[1]["surface"];
   }
   var ConsumeParaphraseAPI = function(text, api_response_callback){
+    console.log("Paraphrasing " + text);
     const api_url = "https://api.idilia.com/1/text/paraphrase.json";
     const params = self.params;
     params["text"] = text;
@@ -158,13 +156,11 @@ var idilia_paraphrase = function(key){
       url: api_url,
       qs: params,
     }
-    self.api_start_time = new Date();
+    // self.api_start_time = new Date();
     request(
       options,
       function(err, response, body){
-        console.log(body);
-        // console.log(JSON.parse(body)["paraphrases"]);
-        LogAPITime();
+        // LogAPITime();
         api_response_callback(err,response, body);
       }
     );
@@ -179,17 +175,17 @@ var idilia_paraphrase = function(key){
     }
     return paraphrases;
   }
-  var LogAPITime = function(){
-    var api_end_time = new Date();
-    var elapsed_ms = api_end_time-self.api_start_time;
-    const MS_IN_SECOND = 1000;
-    var elapsed_seconds = elapsed_ms/MS_IN_SECOND;
-    console.log("It took " + elapsed_seconds + " seconds for the API to respond.");
-  }
+  // var LogAPITime = function(){
+  //   var api_end_time = new Date();
+  //   var elapsed_ms = api_end_time-self.api_start_time;
+  //   const MS_IN_SECOND = 1000;
+  //   var elapsed_seconds = elapsed_ms/MS_IN_SECOND;
+  //   console.log("It took " + elapsed_seconds + " seconds for the API to respond.");
+  // }
   var SplitToParaphraseQueries = function(string){
     var sentences = SplitByClauses(string);
     var query_list = [];
-    console.log(sentences);
+    // console.log(sentences);
     sentences.forEach(
       function(sentence){
         var token_lists = SplitToListsOfEightTokens(sentence);

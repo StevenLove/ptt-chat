@@ -122,11 +122,8 @@ var Transformer = function(){
       callback
     );
   }
-  var Paraphrase = function(text, options, callback){
-    idilia_paraphrase_instance.Paraphrase(
-      text,callback
-    );
-  }
+
+  var Paraphrase = idilia_paraphrase_instance.Paraphrase;
 
   var LogAndPassCallback = function(callback){
     return function(err, succ){
@@ -207,6 +204,7 @@ var Transformer = function(){
   }
   self.Translate = Translate;
   self.DoNothing = DoNothing;
+  self.Paraphrase = Paraphrase;
 }
 module.exports = Transformer;
 
