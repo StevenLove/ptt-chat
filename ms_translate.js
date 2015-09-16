@@ -224,7 +224,8 @@ var ms_translate = function(client_secret){
   }
 
     // callback (err, url of the speech)
-  var Speechify = function(text, language, callback){
+    // if the language is not supported, defaults to english
+  var Speak = function(text, language, callback){
     async.waterfall([
       GetAccessToken,
       async.apply(
@@ -240,15 +241,30 @@ var ms_translate = function(client_secret){
     ]);
   }
 
+  var AutoSpeak = function(text, callback){
+    async.waterfall([
+      async.apply(DetectLanguage,text),
+      function(lang, async_cb){
+        Speak(text, lang["language"], async_cb);
+      },
+      function(result){
+        callback(NO_ERROR, result);
+      }
+    ])
+  }
+
   var SpeechReturner = function(text, cb){
     return function(response, body, callback){
       if(LanguageNameNotSupported(response)){
-        Speechify(text, "en", cb);
+        Speak(text, "en", cb);
         callback({"message": "language not supported"},NO_RETURN);
       }
       else{
         var result = ParseConsumeSpeechAPI(body);
-        callback(NO_ERROR,result);
+        callback(
+          NO_ERROR,
+          {"url": result}
+        );
       }
     }
   }
@@ -406,11 +422,8 @@ var ms_translate = function(client_secret){
     return string;
   }
 
-  // console.log("loading multiple times for no reason");
-  // Speechify("hello world", "en", function(err, url){
-  // });
-
-  self.Speechify = Speechify;
+  self.Speak = Speak;
+  self.AutoSpeak = AutoSpeak;
   self.DetectLanguage = DetectLanguage;
 };
 

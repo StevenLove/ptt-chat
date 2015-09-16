@@ -114,11 +114,11 @@ var Transformer = function(){
     callback(null,text);
   }
 
-  var Translate = function(text, options, callback){
+  var Translate = function(options, callback){
     ms_translate_instance.Translate(
       options.from, 
       options.to, 
-      text,
+      options.text,
       callback
     );
   }
@@ -183,7 +183,7 @@ var Transformer = function(){
   }
 
   self.Speak = ms_translate_instance.Speechify;
-
+  self.AutoSpeak = ms_translate_instance.AutoSpeak;
   self.Scotranslate = scots_translator.Translate;
 
   self.DetectLanguage = ms_translate_instance.DetectLanguage;
@@ -216,7 +216,7 @@ var Transformer = function(){
       return array[index];
     }
   }
-
+  self.Translate = Translate;
 }
 module.exports = Transformer;
 

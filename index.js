@@ -86,7 +86,7 @@ function OnChatMessage(chat_message){
     if(IsDirectedAtBot(chat_message)){
       EmitChatbotResponseToAll(chat_message.original_text);
     }
-    Transform(chat_message);
+    Transform(chat_message["transform_list"][0],chat_message);
 }
 
 var EmitChatMessage = function(chat_message){
@@ -102,28 +102,12 @@ var StoreChatMessage = function(chat_message){
   stored_messages.push(chat_message);
 }
 
-// var EmitImageChatMessage = function(chat_message){
-//   chat_message.is_images = true;
-//   EmitChatMessage(chat_message);
-// }
-
-
 var GetIP = function(socket){
   return socket.request.connection.remoteAddress;
 }
 var GetID = function(socket){
   return socket.id;
 }
-
-
-
-
-
-
-
-
-
-
 
 
 /* User Management */
@@ -168,8 +152,6 @@ var Connect = function(socket){
   console.log("user connected");
   RegisterUser(socket);
 }
-
-
 
 var Disconnect = function(socket){
 
@@ -220,15 +202,6 @@ var NumUsers = function(){
 }
 
 
-
-
-
-
-
-
-
-
-
   /* Stored Messages */
 
 var stored_messages = {};
@@ -254,52 +227,8 @@ function RecapMessagesInBuffer(socket) {
 };
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   /* Callbacks */
-
-var ServerBingImagesCallback = function(chat_message){
-  return function(err, response){
-    if(err){
-      console.log(err);
-    }else{
-      chat_message.image_url_lists = ParseImageSet(response);
-      chat_message["type"] = "ServerImages";
-      EmitAndStoreChatMessage(chat_message);
-    }
-  }
-}
-
-var ServerGoogleImagesCallback = function(chat_message){
-  return function(err, response){
-    if(err){
-      console.log(err);
-    }else{
-      chat_message.image_url_lists = ParseImageSet(response);
-      chat_message["type"] = "ServerImages";
-      EmitAndStoreChatMessage(chat_message);
-    }
-  }
-}
-
+/*
 var PartsOfSpeechCallback = function(chat_message){
   return function(err, response){
     if(err){
@@ -316,19 +245,12 @@ var PartsOfSpeechCallback = function(chat_message){
     }
   }
 }
+*/
 
-var TranslatedCallback = function(chat_message){
-  return function(err, response){
-    var result = response["text"];
-    chat_message.transformed_text = result;
-    chat_message["type"] = "Text";
-    EmitAndStoreChatMessage(chat_message);
-  }
-}
-
+/*
 var SpeakCallback = function(chat_message){
   return function(err, response){
-    chat_message["url"] = response;
+    chat_message["url"] = ParseSpeak(response);;
     chat_message["type"] = "Speak";
     EmitAndStoreChatMessage(chat_message);
   }
@@ -341,6 +263,50 @@ var LogCallback = function(err, response){
 
 
 
+var ParsePartsOfSpeech = function(response){
+  return response.map(
+            function(tagged_word){
+              return tagged_word["penn_pos"];
+            }
+          ).join(" ");
+}
+
+var ParseSpeak = function(response){
+  return response["url"];
+}
+var ParseDetectLanguage = function(response){
+  return response["language"];
+}
+
+
+
+
+
+
+var TransformLocalGoogleImages = function(chat_message){
+  chat_message["type"] = "LocalGoogleImages";
+  return chat_message;
+}
+
+var TransformServerGoogleImages = function(chat_message){
+  transformer.GoogleImages(
+    chat_message.original_text,
+    {}, // options
+    ServerImagesCallback(chat_message)
+  )
+}
+
+var ServerImagesCallback = function(chat_message){
+  return function(err, response){
+    if(err){
+      console.log(err);
+    }else{
+      chat_message.image_url_lists = ParseImageSet(response);
+      chat_message["type"] = "ServerImages";
+      EmitAndStoreChatMessage(chat_message);
+    }
+  }
+}
 
 
 
@@ -358,18 +324,20 @@ function Transform(chat_message){
     chat_message["type"]="LocalGoogleImages";
     EmitAndStoreChatMessage(chat_message);
   }
+
+
   else if(mode === "ServerGoogleImages"){
     transformer.GoogleImages(
       text, 
       options, 
-      ServerGoogleImagesCallback(chat_message)
+      ServerImagesCallback(chat_message)
     );
   }
   else if (mode === "ServerBingImages"){
     transformer.BingImages(
       text,
       options,
-      ServerBingImagesCallback(chat_message)
+      ServerImagesCallback(chat_message)
     );
   }
   else if (mode === "PartsOfSpeech"){
@@ -463,9 +431,6 @@ function Transform(chat_message){
 
 }
 
-  /* Parsing APIs */
-
-
 var ParseImageSet = function(success){
   var results = [];
   success.forEach(function(set){
@@ -495,7 +460,91 @@ var ParseSmartSynonymize = function(success){
   return result.trim();
 }
 
+*/
 
+var CreateTranslated = function(chat_message, response){
+  chat_message["type"] = "Text";
+  chat_message["transformed_text"] = response["text"];
+  return chat_message;
+}
+
+var CreateSpeak = function(chat_message, response){
+  chat_message["url"] = response["url"];
+  chat_message["type"] = "Speak";
+  return chat_message;
+}
+
+
+
+const SPANISH = "Spanish";
+const IMAGES = "Images";
+const SPEAK = "Speak";
+
+
+// var Transform = function(mode, chat_message){
+// }
+
+var Transform = function(mode, chat_message){
+
+  var f;
+  var options = {};
+  var create;
+
+  console.log(mode + " Transform");
+
+  switch(mode){
+    case SPANISH:
+      options = {
+        "text" : chat_message["original_text"],
+        "from" : "en",
+        "to" : "es"
+      };
+      f = transformer.Translate;
+      create = CreateTranslated;
+      break;
+
+    case IMAGES:
+      chat_message["type"] = "LocalGoogleImages";
+      EmitAndStoreChatMessage(chat_message);
+      f = function(){};
+      break;
+
+    case SPEAK:
+      options = chat_message["original_text"];
+      f = transformer.AutoSpeak;
+      create = CreateSpeak;
+      break;
+
+    default:
+      console.error("Unrecognized Transform: " + mode);
+
+    break;
+  }
+
+  var callback = function(err, response){
+    if(err){
+      console.error("ERROR: " + JSON.stringify(err));
+    }
+    else{
+      var result = create(chat_message, response);
+      EmitAndStoreChatMessage(result);
+    }
+  }
+
+  f(
+    options,
+    callback
+  )
+}
+
+
+
+// Receive chat_message
+// Emit a placeholder chat_message with an ID
+// Determine which transform to apply
+// Ask Transformer.js to apply the transform
+// parse the response
+// emit the transformed chat message to replace the placeholder chat_message
 
 
 
