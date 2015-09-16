@@ -481,6 +481,20 @@ var CreateImages = function(chat_message, response){
   return chat_message;
 }
 
+var CreatePugImages = function(chat_message, response){
+  chat_message["type"] = "LocalGoogleImages";
+  chat_message["original_text"] = 
+    chat_message["original_text"]
+    .split(" ")
+    .map(
+      function(word){
+        return word+".pug";
+      }
+    )
+    .join(" ");
+  return chat_message;
+}
+
 var CreateSynonymize = function(chat_message, response){
   response["words"].forEach(function(word){
     console.log(JSON.stringify(word).slice(0,77) + "...");
@@ -560,7 +574,7 @@ var SmartSynonymizeTransform = function(chat_message){
     },
     "function": transformer.SmartSynonymize,
     "creator": CreateSynonymize
-  }
+  };
   return result;
 }
 
@@ -571,7 +585,27 @@ var ParaphraseTransform = function(chat_message){
     },
     "function": transformer.Paraphrase,
     "creator": CreateTranslated
-  }
+  };
+  return result;
+}
+
+var ScotsTransform = function(chat_message){
+  var result = {
+    "options": {
+      "text": chat_message["original_text"]
+    },
+    "function": transformer.Scotranslate,
+    "creator": CreateTranslated
+  };
+  return result;
+}
+
+var PugImagesTransform = function(chat_message){
+  var result = {
+    "options": {},
+    "function": transformer.DoNothing,
+    "creator": CreatePugImages
+  };
   return result;
 }
 
@@ -585,6 +619,8 @@ const SYNONYMIZE = "Synonymize";
 const ANTONYMIZE = "Antonymize";
 const SMARTSYNONYMIZE = "SmartSynonymize";
 const PARAPHRASE = "Paraphrase";
+const SCOTS = "Scots";
+const PUGIMAGES = "PugImages";
 
 
 var Transform = function(mode, chat_message){
@@ -623,6 +659,14 @@ var Transform = function(mode, chat_message){
 
     case PARAPHRASE:
       transformation = ParaphraseTransform;
+      break;
+
+    case SCOTS:
+      transformation = ScotsTransform;
+      break;
+
+    case PUGIMAGES:
+      transformation = PugImagesTransform;
       break;
 
     default:

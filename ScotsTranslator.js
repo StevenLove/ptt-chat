@@ -5,9 +5,9 @@ var ScotsTranslator = function(){
 
 
 
-  var Translate = function(text, options, callback){
+  var Translate = function(word, callback){
     ConsumeScoTranslateAPI(
-      text,
+      word,
       function(err, response, body){
         var result = {};
         if(!err){
@@ -20,23 +20,22 @@ var ScotsTranslator = function(){
 
   var MemoizedTranslate = async.memoize(
     Translate,
-    function(text,options){
-      var str = options.mode+":"+text;
+    function(word){
+      var str = word;
       var hash = str.hashCode();
       console.log(str + " hashed to " + hash);
       return hash;
     }
   );
 
-  var MemoizedTranslateOneAtATime = function(text, options, callback){
-    var words = text.split(" ");
+  var MemoizedTranslateOneAtATime = function(options, callback){
+    var words = options["text"].split(" ");
     var translated = [];
     async.forEachOf(
       words,
       function(word,index,async_cb){
         MemoizedTranslate(
           word,
-          options,
           function(err, result){
             translated[index] = result["text"];
             async_cb();
@@ -56,7 +55,7 @@ var ScotsTranslator = function(){
     var params = querystring.stringify({
       "SourceId": '11',
       "RegionId": '1007',
-      "InputString": text
+      "InputString": " " + text // A space before the text prevents automatic capitalization
     });
     var options = {
       "url": url,
