@@ -244,9 +244,12 @@ var ms_translate = function(client_secret){
     return function(response, body, callback){
       if(LanguageNameNotSupported(response)){
         Speechify(text, "en", cb);
+        callback({"message": "language not supported"},NO_RETURN);
       }
-      var result = ParseConsumeSpeechAPI(body);
-      callback(NO_ERROR,result);
+      else{
+        var result = ParseConsumeSpeechAPI(body);
+        callback(NO_ERROR,result);
+      }
     }
   }
 
