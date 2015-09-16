@@ -481,6 +481,11 @@ var CreateImages = function(chat_message, response){
   return chat_message;
 }
 
+var CreateText = function(chat_message, response){
+  chat_message["type"] = "Text";
+  return chat_message;
+}
+
 var CreatePugImages = function(chat_message, response){
   chat_message["type"] = "LocalGoogleImages";
   chat_message["original_text"] = 
@@ -609,6 +614,17 @@ var PugImagesTransform = function(chat_message){
   return result;
 }
 
+var DoNothingTransform = function(chat_message){
+  var result = {
+    "options": {
+      "text": chat_message["original_text"]
+    },
+    "function": transformer.DoNothing,
+    "creator": CreateText
+  }
+  return result;
+}
+
 
 
 const SPANISH = "Spanish";
@@ -622,65 +638,62 @@ const PARAPHRASE = "Paraphrase";
 const SCOTS = "Scots";
 const PUGIMAGES = "PugImages";
 
-
-var Transform = function(mode, chat_message){
+var ChooseTransform = function(mode){
   var transformation;
-
-  console.log(mode + " Transform");
-
   switch(mode){
     case SPANISH:
       transformation = SpanishTransform;
       break;
-
     case GERMAN:
       transformation = GermanTransform;
       break;
-
     case IMAGES:
       transformation = ImagesTransform;
       break;
-
     case SPEAK:
       transformation = SpeakTransform;
       break;
-
     case SYNONYMIZE:
       transformation = SynonymizeTransform;
       break;
-
     case ANTONYMIZE:
       transformation = AntonymizeTransform;
       break;
-
     case SMARTSYNONYMIZE:
       transformation = SmartSynonymizeTransform;
       break;
-
     case PARAPHRASE:
       transformation = ParaphraseTransform;
       break;
-
     case SCOTS:
       transformation = ScotsTransform;
       break;
-
     case PUGIMAGES:
       transformation = PugImagesTransform;
       break;
-
     default:
       console.error("Unrecognized Transform: " + mode);
-
+      transformation = DoNothingTransform;
     break;
   }
+  return transformation;
+}
+
+
+var Transform = function(mode, chat_message){
+  var transformation = ChooseTransform(mode);
+  console.log("\n");
+  console.log(mode + " Transform on " + chat_message["original_text"]);
 
   var transform = transformation(chat_message);
   var func = transform["function"];
   var create = transform["creator"];
   var options = transform["options"];
 
+  var api_start_time = new Date();
+
   var callback = function(err, response){
+    LogAPITime(api_start_time);
     if(err){
       console.error("ERROR: " + JSON.stringify(err));
     }
@@ -693,7 +706,15 @@ var Transform = function(mode, chat_message){
   func(
     options,
     callback
-  )
+  );
+}
+
+var LogAPITime = function(api_start_time){
+  var api_end_time = new Date();
+  var elapsed_ms = api_end_time-api_start_time;
+  const MS_IN_SECOND = 1000;
+  var elapsed_seconds = elapsed_ms/MS_IN_SECOND;
+  console.log("It took " + elapsed_seconds + " seconds for the API to respond.");
 }
 
 
