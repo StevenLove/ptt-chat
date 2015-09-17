@@ -355,12 +355,13 @@ var ImagesTransform = function(chat_message){
 
 var SpeakTransform = function(chat_message){
  var result = {
-    "options": chat_message["original_text"], //why is it called options?  because it's really just the first arg to the "function" function
-    "function": async.apply(transformer.Speak, "cy"),
-               // transformer.AutoSpeak,
-
+    "options": chat_message["original_text"], 
+    "function": transformer.AutoSpeak,
     "creator": CreateSpeak
   };
+  if(default_language != undefined){
+    result["function"] = async.apply(transformer.Speak, default_language);
+  }
   return result;
 }
 
