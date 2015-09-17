@@ -359,6 +359,7 @@ var SpeakTransform = function(chat_message){
     "function": transformer.AutoSpeak,
     "creator": CreateSpeak
   };
+  var default_language = undefined;
   if(default_language != undefined){
     result["function"] = async.apply(transformer.Speak, default_language);
   }
