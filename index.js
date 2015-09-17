@@ -6,6 +6,8 @@ var io = require('socket.io')(app_http);
 var phonetic = require('phonetic');
 var request = require('request');
 
+var async = require('async');
+
 var Transformer = require('./Transformer.js');
 var transformer = new Transformer();
 
@@ -66,7 +68,8 @@ io.on('connection', function(socket){
       Disconnect(socket);
     });
 
-    socket.on('init',function(){
+    socket.on('init',function( speech_synthesis_available ){
+      RegisterSpeechSynthesisAvailability(socket, speech_synthesis_available);
       RecapMessagesInBuffer(socket);
     });
   }
@@ -81,23 +84,39 @@ io.on('connection', function(socket){
 
   /* Sockets */
 
+var RegisterSpeechSynthesisAvailability = function(socket, bool){
+  var sid = GetID(socket);
+  var user = GetUser(sid);
+  user["speech_synthesis_available"] = bool;
+  // socket["speech_synthesis_available"] = bool;
+}
+
 function OnChatMessage(chat_message){
-    chat_message = JSON.parse(JSON.stringify(chat_message));
-    if(IsDirectedAtBot(chat_message)){
-      EmitChatbotResponseToAll(chat_message.original_text);
-    }
+  chat_message = JSON.parse(JSON.stringify(chat_message));
+  if(IsDirectedAtBot(chat_message)){
+    EmitChatbotResponseToAll(chat_message.original_text);
+  }
 
-    // Receive chat_message
-    // Emit a placeholder chat_message with an ID
-    // Determine which transform to apply
-    // Ask Transformer.js to apply the transform
-    // parse the response
-    // emit the transformed chat message to replace the placeholder chat_message
+  // Receive chat_message
+  // Emit a placeholder chat_message with an ID
+  // Determine which transform to apply
+  // Ask Transformer.js to apply the transform
+  // parse the response
+  // emit the transformed chat message to replace the placeholder chat_message
 
-    Transform(chat_message["transform_list"][0],chat_message, function(err, result){
+  Transform(
+    chat_message["transform_list"][0],
+    chat_message,
+    function(err, result){
       console.log(result);
       EmitAndStoreChatMessage(result);
-    });
+    }
+  );
+
+  // TransformChain(null, chat_message, function(err, result){
+  //     console.log(result);
+  //     EmitAndStoreChatMessage(result);
+  //   })
 }
 
 var EmitChatMessage = function(chat_message){
@@ -139,8 +158,13 @@ var User = function(sid,ip){
     "socket_id": sid,
     "ip": ip,
     "random_name": random_name,
-    "name": random_name
+    "name": random_name,
+    "speech_synthesis_available": false
   };
+}
+
+var GetUser = function(sid){
+  return active_users[sid];
 }
 
 var Connect = function(socket){
@@ -210,6 +234,13 @@ function TooManyUsers(){
 
 var NumUsers = function(){
   return Object.keys(active_users).length;
+}
+
+var EveryoneCanSynthesizeSpeech = function(){
+  return Object.keys(active_users).reduce(function(prev, current){
+    var this_user_can = active_users[current] && active_users[current]["speech_synthesis_available"];
+    return prev && this_user_can;
+  });
 }
 
 
@@ -325,7 +356,9 @@ var ImagesTransform = function(chat_message){
 var SpeakTransform = function(chat_message){
  var result = {
     "options": chat_message["original_text"], //why is it called options?  because it's really just the first arg to the "function" function
-    "function": transformer.AutoSpeak,
+    "function": async.apply(transformer.Speak, "cy"),
+               // transformer.AutoSpeak,
+
     "creator": CreateSpeak
   };
   return result;
@@ -401,6 +434,16 @@ var DoNothingTransform = function(chat_message){
   return result;
 }
 
+var LocalSpeakTransform = function(chat_message){
+  var result = DoNothingTransform(chat_message);
+  result["creator"] = function(chat_message, response){
+    chat_message["type"] = "LocalSpeak";
+    chat_message["transformed_text"] = chat_message["original_text"];
+    return chat_message;
+  };
+  return result;
+}
+
 
 
 const SPANISH = "Spanish";
@@ -447,6 +490,9 @@ var ChooseTransform = function(mode){
     case PUGIMAGES:
       transformation = PugImagesTransform;
       break;
+    case "LocalSpeak":
+      transformation = LocalSpeakTransform;
+      break;
     case "None":
       transformation = DoNothingTransform;
       break;
@@ -458,36 +504,38 @@ var ChooseTransform = function(mode){
   return transformation;
 }
 
-var TransformChain = function(transform_list, chat_message){
-  transform_list.forEach(function(mode){
-    Transform
-  })
+var TransformChain = function(transform_list, chat_message, callback){
+  async.waterfall([
+    function(async_cb){
+      Transform("Scots", chat_message, async_cb);
+    },
+    function(cm, async_cb){
+      cm["original_text"] = cm["transformed_text"];
+      async_cb(null, cm);
+    },
+    function(cm, async_cb){
+      Transform("Speak", cm, async_cb);
+    },
+    function(cm, async_cb){
+      callback(null, cm);
+    }
+  ]);
 }
 
 var Transform = function(mode, chat_message, callback){
+  console.log("Can everyone speak?: " + EveryoneCanSynthesizeSpeech());
+  if(mode == SPEAK && EveryoneCanSynthesizeSpeech()){
+    console.log("Everyone CAN!");
+    mode = "LocalSpeak";
+  }
+
   var transformation = ChooseTransform(mode);
   console.log("\n");
-  console.log(mode + " Transform on " + chat_message["original_text"]);
-
+  console.log(mode +" Transform on \"" + chat_message["original_text"] + "\"");
   var transform = transformation(chat_message);
   var func = transform["function"];
   var create = transform["creator"];
   var options = transform["options"];
-
-  // var api_start_time = new Date();
-
-  // var cb = function(err, response){
-  //   LogAPITime(api_start_time);
-  //   if(err){
-  //     console.error("ERROR: " + JSON.stringify(err));
-  //     callback(err,null);
-  //   }
-  //   else{
-  //     var result = create(chat_message, response);
-  //     callback(null, result);
-  //     // EmitAndStoreChatMessage(result);
-  //   }
-  // }
 
   func(
     options,

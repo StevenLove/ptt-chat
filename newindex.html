@@ -239,7 +239,6 @@ var FacebookLoggedOutCallback = function(){
       
       function SetupSockets(){
         document.socket = io();
-        console.log(document.socket);
         // console.log(JSON.stringify(socket));
         document.socket.on('chat message', function(chat_message){
           ChatMessageContainer(chat_message);
@@ -265,11 +264,24 @@ var FacebookLoggedOutCallback = function(){
           ClearUserDropdown();
           PopulateUserDropdown(user_list);
         });
+
+        SocketInit();
       }
 
 
+      function SocketInit(){
+        document.socket.emit('init', CanSpeakLocal());
+      }
+
+      // function NotifyServerAboutSpeechSynthesis = function(){
+      //   if( CanSpeakLocal() ){
+      //     document.socket.emit("canspeaklocal")
+      //   }
+      // }
+
+
       function PopulateTransformDropdown(){
-        var options = ["None", "Images", "Synonymize", "Antonymize", "SmartSynonymize" , "Paraphrase", "Spanish", "Scots", "German", "Speak", "PugImages"];
+        var options = ["None", "Images", "Synonymize", "Antonymize", "SmartSynonymize" , "Paraphrase", "Spanish", "Scots", "German", "Speak", "PugImages", "LocalSpeak"];
         options.forEach(function(option){
           $("#transform_dropdown").append("<option value = " + option +">" + option + "</option>");
         });
@@ -329,9 +341,6 @@ var FacebookLoggedOutCallback = function(){
         return chat_message;
       }
 
-      function RequestRecentChatMessages(){
-        document.socket.emit('init');
-      }
 
       /* Initialization */
 
@@ -340,10 +349,10 @@ var FacebookLoggedOutCallback = function(){
         // SetupGoogleSearch();
         SetupSockets();
         EnableScrollDownOnResize();
-        RequestRecentChatMessages();
         EnableSendButton();
         SetupTransforms();
         EnableTooltips();
+
       });
 
       function EnableTooltips(){
@@ -592,9 +601,32 @@ var FacebookLoggedOutCallback = function(){
     return base+ip+"?set=any&bgset=any";
   }
 
+
+
+  /* SpeakLocal */
+  var SpeakLocal = function(text){
+    console.log("speaking this: " + text + ".");
+    var worte = new SpeechSynthesisUtterance(text);
+    // worte.lang = "en-UK";
+    window.speechSynthesis.speak(worte);
+    worte.pitch= 4;
+    worte.rate = 1;
+    // console.log(window.speechSynthesis);
+    // window.speechSynthesis.pause();
+    // window.speechSynthesis.resume();
+    // window.speechSynthesis.cancel();
+  }
+
+  var CanSpeakLocal = function(){
+    return (window.speechSynthesis != undefined);
+  } 
+
   /* Messages */
 
   var Msg = function(chat_message){
+    if(IsLocalSpeakMessage(chat_message)){
+      return LocalSpeakMessage(chat_message);
+    }
     if(IsSpeakMessage(chat_message)){
       return SpeakMessage(chat_message);
     }
@@ -611,6 +643,9 @@ var FacebookLoggedOutCallback = function(){
   // var IsPugImageMessage = function(chat_message){
   //   return chat_message.transformation_list =]
   // }
+  var IsLocalSpeakMessage = function(chat_message){
+    return chat_message["type"] === "LocalSpeak";
+  }
 
   var IsSpeakMessage = function(chat_message){
     return chat_message["type"] === "Speak";
@@ -632,6 +667,15 @@ var FacebookLoggedOutCallback = function(){
     var html = $("<audio controls autoplay><source id = 'audio_source' src='"+src+"'</audio>");
     return html;
   }
+
+  var LocalSpeakMessage = function(chat_message){
+    if(CanSpeakLocal()){
+      SpeakLocal(chat_message["transformed_text"]);
+    }
+    var msg = GenerateMsgHTML();
+    return msg;
+  }
+
   var SpeakMessage = function(chat_message){
     console.log("SPEAKMESSAGE");
     var msg = GenerateMsgHTML();
@@ -778,6 +822,8 @@ var FacebookLoggedOutCallback = function(){
     my_search.setResultSetSize(8);
     my_search.execute(string);
   }
+
+
 
 </script>
 

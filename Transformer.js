@@ -168,7 +168,7 @@ var Transformer = function(){
     );
   }
 
-  self.Speak = ms_translate_instance.Speechify;
+  self.Speak = ms_translate_instance.Speak;
   self.AutoSpeak = ms_translate_instance.AutoSpeak;
   self.Scotranslate = scots_translator.Translate;
 
