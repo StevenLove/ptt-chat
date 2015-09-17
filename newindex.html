@@ -142,7 +142,7 @@
                     <div id="branding" ></div>
                 </li>
                 <li>
-                  <div id="audio_container"></div>
+                  <select id="voicelist"></select>
                 </li>
             </ul>
         </div>
@@ -605,17 +605,35 @@ var FacebookLoggedOutCallback = function(){
 
   /* SpeakLocal */
   var SpeakLocal = function(text){
+    if(!text){
+      return;
+    }
     console.log("speaking this: " + text + ".");
-    var worte = new SpeechSynthesisUtterance(text);
-    // worte.lang = "en-UK";
-    window.speechSynthesis.speak(worte);
-    worte.pitch= 4;
-    worte.rate = 1;
-    // console.log(window.speechSynthesis);
-    // window.speechSynthesis.pause();
-    // window.speechSynthesis.resume();
-    // window.speechSynthesis.cancel();
+    var msg = new SpeechSynthesisUtterance(text);
+    var voices = window.speechSynthesis.getVoices();
+    msg.voice = voices[$("#voicelist").val()];
+    window.speechSynthesis.speak(msg);
+    
   }
+
+  $(document).ready(function(){
+    speechSynthesis.onvoiceschanged = function() {
+
+      var $voicelist = $('<select id = "voicelist"></select>');
+          
+      speechSynthesis.getVoices().forEach(function(voice, index) {
+        console.log(index, voice.name, voice.default ? '(default)' :'');
+        var $option = $('<option>')
+        .val(index)
+        .html(voice.name + (voice.default ? ' (default)' :''));
+        
+        $voicelist.append($option);
+      });
+
+      $("#voicelist").replaceWith($voicelist);
+
+    }
+  });
 
   var CanSpeakLocal = function(){
     return (window.speechSynthesis != undefined);
