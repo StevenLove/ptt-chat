@@ -604,16 +604,53 @@ var FacebookLoggedOutCallback = function(){
 
 
   /* SpeakLocal */
-  var SpeakLocal = function(text){
+  var SpeakLocal = function(chat_message){
+    var text = chat_message["original_text"];
     if(!text){
       return;
     }
     console.log("speaking this: " + text + ".");
     var msg = new SpeechSynthesisUtterance(text);
     var voices = window.speechSynthesis.getVoices();
-    msg.voice = voices[$("#voicelist").val()];
+
+    if(chat_message["author_id"] === "f6d4afd83e34564d"){
+      console.log("the message was from a bot");
+      msg["pitch"] = 0.6;
+      msg["rate"] = 0.9;
+      msg.voice = ChooseFemaleVoice();
+    }
+    else{
+      msg.voice = voices[$("#voicelist").val()];
+    }
+
     window.speechSynthesis.speak(msg);
     
+  }
+
+  var ChooseFemaleVoice = function(){
+    var result = undefined;
+    // var arr = speechSynthesis.getVoices();
+    // var len = arr.length;
+    // for(var i = 0; i < len; ++i){
+    //   var 
+    // }
+    speechSynthesis.getVoices().forEach(function(voice, index) {
+      if(voice.name.indexOf("emale") >  -1){
+        console.log("should be one: " + index);
+        result = window.speechSynthesis.getVoices()[index];
+        console.log(voice);
+      }
+    });
+
+    if(!result){
+      console.log("I couldn't find a female voice for the bot");
+      return window.speechSynthesis.getVoices()[0];
+    }
+    else{
+      console.log("I found a female voice for the bot");
+      return result;
+    }
+   
   }
 
   $(document).ready(function(){
@@ -638,6 +675,10 @@ var FacebookLoggedOutCallback = function(){
   var CanSpeakLocal = function(){
     return (window.speechSynthesis != undefined);
   } 
+
+  // var GenerateLocalAudioPlayer = function(){
+
+  // }
 
   /* Messages */
 
@@ -688,7 +729,7 @@ var FacebookLoggedOutCallback = function(){
 
   var LocalSpeakMessage = function(chat_message){
     if(CanSpeakLocal()){
-      SpeakLocal(chat_message["transformed_text"]);
+      SpeakLocal(chat_message);
     }
     var msg = GenerateMsgHTML();
     return msg;
