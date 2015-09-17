@@ -225,7 +225,7 @@ var ms_translate = function(client_secret){
 
     // callback (err, url of the speech)
     // if the language is not supported, defaults to english
-  var Speak = function(text, language, callback){
+  var Speak = function(language, text, callback){
     async.waterfall([
       GetAccessToken,
       async.apply(
@@ -245,7 +245,7 @@ var ms_translate = function(client_secret){
     async.waterfall([
       async.apply(DetectLanguage,text),
       function(lang, async_cb){
-        Speak(text, lang["language"], async_cb);
+        Speak(lang["language"],text, async_cb);
       },
       function(result){
         callback(NO_ERROR, result);
@@ -256,10 +256,12 @@ var ms_translate = function(client_secret){
   var SpeechReturner = function(text, cb){
     return function(response, body, callback){
       if(LanguageNameNotSupported(response)){
-        Speak(text, "en", cb);
+        console.log("LANGUAGE NOT SUPPORTED");
+        Speak("en", text, cb);
         callback({"message": "language not supported"},NO_RETURN);
       }
       else{
+        console.log("LANGUAGE SUPPORTED");
         var result = ParseConsumeSpeechAPI(body);
         callback(
           NO_ERROR,
