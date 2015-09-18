@@ -68,9 +68,12 @@ io.on('connection', function(socket){
       Disconnect(socket);
     });
 
-    socket.on('init',function( speech_synthesis_available ){
-      RegisterSpeechSynthesisAvailability(socket, speech_synthesis_available);
+    socket.on('init',function(){
       RecapMessagesInBuffer(socket);
+    });
+
+    socket.on('speech synthesis', function(available){
+      RegisterSpeechSynthesisAvailability(socket, available);
     });
   }
 });
@@ -459,6 +462,7 @@ const PARAPHRASE = "Paraphrase";
 const SCOTS = "Scots";
 const PUGIMAGES = "PugImages";
 
+
 var ChooseTransform = function(mode){
   var transformation;
   switch(mode){
@@ -526,9 +530,14 @@ var TransformChain = function(transform_list, chat_message, callback){
 
 var Transform = function(mode, chat_message, callback){
   console.log("Can everyone speak?: " + EveryoneCanSynthesizeSpeech());
-  if(mode == SPEAK && EveryoneCanSynthesizeSpeech()){
-    console.log("Everyone CAN!");
-    mode = "LocalSpeak";
+  if(mode == "AutoSpeak"){
+    if(EveryoneCanSynthesizeSpeech()){
+      console.log("Everyone CAN!");
+      mode = "LocalSpeak";
+    }
+    else{
+      mode = "Speak";
+    }
   }
 
   var transformation = ChooseTransform(mode);
@@ -653,7 +662,7 @@ function EmitChatbotResponseToAll(message){
         timestamp: new Date().getTime(),
         author_name: "Chatbot Lauren",
         author_id: BOTID,
-        transform_list: ["Speak"],
+        transform_list: ["AutoSpeak"],
         taget: "Humans",
         original_text: bot_text,
         is_images: true,

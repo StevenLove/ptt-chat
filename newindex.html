@@ -270,7 +270,7 @@ var FacebookLoggedOutCallback = function(){
 
 
       function SocketInit(){
-        document.socket.emit('init', CanSpeakLocal());
+        document.socket.emit('init');
       }
 
       // function NotifyServerAboutSpeechSynthesis = function(){
@@ -281,7 +281,7 @@ var FacebookLoggedOutCallback = function(){
 
 
       function PopulateTransformDropdown(){
-        var options = ["None", "Images", "Synonymize", "Antonymize", "SmartSynonymize" , "Paraphrase", "Spanish", "Scots", "German", "Speak", "PugImages", "LocalSpeak"];
+        var options = ["None", "Images", "Synonymize", "Antonymize", "SmartSynonymize" , "Paraphrase", "Spanish", "Scots", "German", "Speak", "PugImages", "LocalSpeak", "AutoSpeak"];
         options.forEach(function(option){
           $("#transform_dropdown").append("<option value = " + option +">" + option + "</option>");
         });
@@ -352,6 +352,7 @@ var FacebookLoggedOutCallback = function(){
         EnableSendButton();
         SetupTransforms();
         EnableTooltips();
+        SetupSpeechSynthesis();
 
       });
 
@@ -368,9 +369,11 @@ var FacebookLoggedOutCallback = function(){
 
       function HitSend(){
         var input = GetInput();
-        ClearInput();
-        console.log("sending " + input);
-        document.socket.emit('chat message', new ChatMessage(input));
+        if(input && input.length > 0){
+          ClearInput();
+          console.log("sending " + input);
+          document.socket.emit('chat message', new ChatMessage(input));
+        }
         return false;
       }
       function GetInput(){
@@ -629,19 +632,11 @@ var FacebookLoggedOutCallback = function(){
 
   var ChooseFemaleVoice = function(){
     var result = undefined;
-    // var arr = speechSynthesis.getVoices();
-    // var len = arr.length;
-    // for(var i = 0; i < len; ++i){
-    //   var 
-    // }
     speechSynthesis.getVoices().forEach(function(voice, index) {
       if(voice.name.indexOf("emale") >  -1){
-        console.log("should be one: " + index);
         result = window.speechSynthesis.getVoices()[index];
-        console.log(voice);
       }
     });
-
     if(!result){
       console.log("I couldn't find a female voice for the bot");
       return window.speechSynthesis.getVoices()[0];
@@ -650,35 +645,58 @@ var FacebookLoggedOutCallback = function(){
       console.log("I found a female voice for the bot");
       return result;
     }
-   
+  }
+  var SetupSpeechSynthesis = function(){
+    if(speechSynthesis){
+      speechSynthesis.onvoiceschanged = function() {
+        console.log("ON VOICES CHANGED");
+        document.socket.emit('speech synthesis', true);
+        UpdateVoiceDropdown();
+      }
+    }
   }
 
-  $(document).ready(function(){
-    speechSynthesis.onvoiceschanged = function() {
-
-      var $voicelist = $('<select id = "voicelist"></select>');
-          
-      speechSynthesis.getVoices().forEach(function(voice, index) {
-        console.log(index, voice.name, voice.default ? '(default)' :'');
-        var $option = $('<option>')
-        .val(index)
-        .html(voice.name + (voice.default ? ' (default)' :''));
-        
-        $voicelist.append($option);
-      });
-
-      $("#voicelist").replaceWith($voicelist);
-
+  var UpdateVoiceDropdown = function(){
+    
+    if(VoicesExistInDropdown()){
+      console.log("voices exist");
+      var current_selected = $("#voicelist").val();
+      var $voicelist = BuildVoiceDropdown();
+      $voicelist.val(current_selected);
     }
-  });
+    else{
+      console.log("voices don't exist");
+      var $voicelist = BuildVoiceDropdown();
+    }
+    $("#voicelist").replaceWith($voicelist);
+  }
+
+  var BuildVoiceDropdown = function(){
+    var $voicelist = $('<select id = "voicelist"></select>');
+    speechSynthesis.getVoices().forEach(function(voice, index) {
+      var $option = $('<option>')
+      .val(index)
+      .html(voice.name + (voice.default ? ' (default)' :''));
+      $voicelist.append($option);
+    });
+    return $voicelist;
+  }
+
+  var VoicesExistInDropdown = function(){
+    return $("#voicelist").children().length > 0
+  }
 
   var CanSpeakLocal = function(){
     return (window.speechSynthesis != undefined);
   } 
 
-  // var GenerateLocalAudioPlayer = function(){
-
-  // }
+  var GenerateLocalAudioPlayer = function(chat_message){
+    var div = $('<div> <a href="#" class="btn btn-default"><span class="glyphicon glyphicon-volume-up" aria-hidden="true"></span> Play </a> </div>');
+    div.click(function(){
+      SpeakLocal(chat_message);
+    });
+    return div;
+  }
 
   /* Messages */
 
@@ -723,25 +741,41 @@ var FacebookLoggedOutCallback = function(){
   }
 
   var GenerateAudioPlayer = function(src){
-    var html = $("<audio controls autoplay><source id = 'audio_source' src='"+src+"'</audio>");
-    return html;
+    var $html = $("<audio controls><source id = 'audio_source' src='"+src+"'</audio>");
+    return $html;
+  }
+
+  var GenerateAutoplayAudioPlayer = function(src){
+    var $audio = GenerateAudioPlayer(src);
+    $audio.attr("autoplay","true");
+    return $audio;
   }
 
   var LocalSpeakMessage = function(chat_message){
-    if(CanSpeakLocal()){
-      SpeakLocal(chat_message);
+    if(!IsRecap(chat_message)){
+      if(CanSpeakLocal()){
+        SpeakLocal(chat_message);
+      }
     }
     var msg = GenerateMsgHTML();
+    msg.append(GenerateLocalAudioPlayer(chat_message));
     return msg;
   }
 
   var SpeakMessage = function(chat_message){
-    console.log("SPEAKMESSAGE");
-    var msg = GenerateMsgHTML();
+    var $msg = GenerateMsgHTML();
     var url = chat_message["url"];
-    msg.append(GenerateAudioPlayer(url));
-    // $("#audio_container").replaceWith(GenerateAudioPlayer(url));
-    return msg;
+    if(IsRecap(chat_message)){
+      $msg.append(GenerateAudioPlayer(url));
+    }
+    else{
+      $msg.append(GenerateAutoplayAudioPlayer(url));
+    }
+    return $msg;
+  }
+
+  var IsRecap = function(chat_message){
+    return chat_message["recap"] == true;
   }
 
   var TextMsg = function(chat_message){
