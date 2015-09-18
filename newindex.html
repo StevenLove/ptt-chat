@@ -691,11 +691,15 @@ var FacebookLoggedOutCallback = function(){
   } 
 
   var GenerateLocalAudioPlayer = function(chat_message){
-    var div = $('<div> <a href="#" class="btn btn-default"><span class="glyphicon glyphicon-volume-up" aria-hidden="true"></span> Play </a> </div>');
-    div.click(function(){
+    var $btn = $('<a href="#" class="btn btn-default"></a>');
+    var $icon = $('<span class="glyphicon glyphicon-volume-up" aria-hidden="true"></span>');
+    var $div = $('<div> </div>');
+    $btn.text("Play ").click(function(){
       SpeakLocal(chat_message);
     });
-    return div;
+    $btn.append($icon);
+    $div.append($btn);
+    return $div;
   }
 
   /* Messages */
