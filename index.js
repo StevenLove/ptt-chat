@@ -668,7 +668,12 @@ function EmitChatbotResponseToAll(message){
         is_images: true,
       }
 
-      OnChatMessage(chatbot_chat_message);
+      setTimeout(function(){
+        OnChatMessage(chatbot_chat_message);
+      }, 1800);
+      
+
+
     });
   }).on('error', function(e) {
       console.log("PB GET Got error: ", e);
