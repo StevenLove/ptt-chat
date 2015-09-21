@@ -34,9 +34,6 @@
      window.checkLoginState = facebook.checkLoginState;
 
 
-     console.log(synthesis);
-
-
     var SetupSockets = function(){
       document.socket = io();
       document.socket.on('chat message', ReceiveChatMessage);
@@ -222,8 +219,8 @@
       this.timestamp = new Date().getTime();
       this.target = (directed_at_bot)? "Everyone" : "Humans";
       this.original_text = this.text = message;
-
       this.transform_list = document.transforms;
+      this.tts_voice = synthesis.GetChosenVoiceURI();
     }
 
     

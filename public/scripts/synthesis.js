@@ -18,11 +18,27 @@ define([], function(){
         msg.voice = ChooseFemaleVoice();
       }
       else{
-        msg.voice = voices[$("#voicelist").val()];
+        msg.voice = GetVoiceFromURI(chat_message.tts_voice);
       }
 
       window.speechSynthesis.speak(msg);
       
+    }
+
+    var GetVoiceFromURI = function(voice_URI){
+      var voices = window.speechSynthesis.getVoices();
+      var index = voices.findIndex(function(voice, index, array){
+        return voice["voiceURI"] === voice_URI;
+      });
+      return voices[index];
+    }
+
+    var GetChosenVoiceURI = function(){
+      var voices = window.speechSynthesis.getVoices();
+      var index = $("#voicelist").val();
+      var result = voices[index]["voiceURI"];
+      console.log("VOICE: " + result);
+      return result;
     }
 
 
@@ -109,38 +125,16 @@ define([], function(){
       return $audio;
     }
 
-    // this.LocalSpeakMessage = function(chat_message){
-    //   if(!IsRecap(chat_message)){
-    //     if(CanSpeakLocal()){
-    //       SpeakLocal(chat_message);
-    //     }
-    //   }
-    //   var $msg = GenerateMsgHTML();
-    //   $msg.append(GenerateLocalAudioPlayer(chat_message));
-    //   return $msg;
+    // var HasVoice = function(voice){
+    //   
     // }
 
-    // this.SpeakMessage = function(chat_message){
-    //   var $msg = GenerateMsgHTML();
-    //   var url = chat_message["url"];
-    //   if(IsRecap(chat_message)){
-    //     $msg.append(GenerateAudioPlayer(url));
-    //   }
-    //   else{
-    //     $msg.append(GenerateAutoplayAudioPlayer(url));
-    //   }
-    //   return $msg;
-    // }
 
 /* DONT BELONG HERE */
     var IsRecap = function(chat_message){
       return chat_message["recap"] == true;
     }
 
-    var GenerateMsgHTML = function(){
-      var msg = $("<div name='msg'></div>");
-      return msg;
-    }
 /* DONT BELONG HERE */
 
     $(document).ready(function(){
@@ -152,6 +146,7 @@ define([], function(){
     this.CanSpeakLocal = CanSpeakLocal;
     this.GenerateAudioPlayer = GenerateAudioPlayer;
     this.GenerateAutoplayAudioPlayer = GenerateAutoplayAudioPlayer;
+    this.GetChosenVoiceURI = GetChosenVoiceURI;
   }
 
 
