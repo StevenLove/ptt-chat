@@ -8,14 +8,12 @@ define(['scripts/google.js'], function(google_ref){
       var $div = $("<div></div>");
       var img_containers = [];
 
+      var txt= chat_message["text"];
       if(chat_message.transform_list.indexOf("PugImages")>-1){
-        chat_message.transformed_text = PuggifySentence(chat_message.original_text);
-      }
-      else{
-        chat_message.transformed_text = chat_message.original_text;
+        txt = PuggifySentence(txt);
       }
 
-      var words = chat_message.transformed_text.split(" ");
+      var words = txt.split(" ");
       words.forEach(function(word,index){
         img_containers[index] = $("<div>");
         img_containers[index].css('display','inline-block');

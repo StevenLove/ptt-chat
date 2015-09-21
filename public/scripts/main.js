@@ -77,18 +77,70 @@
 
 
     var PopulateTransformDropdown = function(){
-      var options = ["None", "Images", "Synonymize", "Antonymize", "SmartSynonymize" , "Paraphrase", "Spanish", "Scots", "German", "Speak", "PugImages", "LocalSpeak", "AutoSpeak"];
-      options.forEach(function(option){
-        $("#transform_dropdown").append("<option value = " + option +">" + option + "</option>");
-      });
-      $("#transform_dropdown").change(function(){
-        document.transforms = [$("#transform_dropdown option:selected").val()];
-      });
+      CreateTransformDropdowns();
+
+      // options.forEach(function(option){
+      //   $("#transform_dropdown").append("<option value = " + option +">" + option + "</option>");
+      // });
+
+
+      // $("#transform_dropdown").change(function(){
+      //   var selected = $("#transform_dropdown option:selected").val();
+      //   if(selected === "Add a Transform..."){
+
+      //   }
+      //   else{
+      //     document.transforms = [selected,"LocalSpeak"];
+      //   }
+      // });
     }
+
+    var CreateTransformDropdowns = function(){
+      var options = ["None", "Images", "Synonymize", "Antonymize", "SmartSynonymize" , "Paraphrase", "Spanish", "Scots", "German", "Speak", "PugImages", "LocalSpeak", "AutoSpeak"];
+
+      // options.push("Add a Transform...");
+
+      var $select1 = CreateTransformDropdown(0,options);
+      var $select2 = CreateTransformDropdown(1,options);
+
+      $("#transform_dropdown_0").replaceWith($select1);
+      $("#transform_dropdown_1").replaceWith($select2);
+
+
+    }
+
+    var CreateTransformDropdown = function(index, list){
+      var $select = $("<select id ='transform_dropdown_"+index+"' class='form-control'></select>");
+      list.forEach(function(option){
+        $select.append("<option value = " + option +">" + option + "</option>");
+      });
+      $select.change(function(){
+        var selected = $("#transform_dropdown_"+index + " option:selected").val();
+        document.transforms[index] = selected;
+      });
+      return $select;
+    }
+
+    // var CreateExtendableTransformDropdown = function(index,list){
+    //   var new_list = list.slice(0);
+    //   new_list.push("Add a Transform...");
+    //   var $select = CreateTransformDropdown(index,list);
+    //   $select.change(function(){
+    //     var selected = $("#transform_dropdown_"+index + " option:selected").val();
+    //     if(selected === "Add a Transform..."){
+    //       var $this_transform = CreateTransformDropdown(index,list);
+    //       var $new_transform = CreateTransformDropdown(index+1,list);
+    //       $("#transform_dropdown_"+index).replaceWith($new_transform);
+    //     }
+    //     else{
+    //       document.transforms[index] = selected;
+    //     }
+    //   })
+    // }
 
 
     var SetupTransforms = function(){
-      document.transforms = ["None"];
+      document.transforms = ["None", "None"];
       PopulateTransformDropdown();
     }
 

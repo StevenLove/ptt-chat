@@ -3,7 +3,7 @@ define([], function(){
   var synthesis = function(){
     /* SpeakLocal */
     var SpeakLocal = function(chat_message){
-      var text = chat_message["original_text"];
+      var text = chat_message["text"];
       if(!text){
         return;
       }

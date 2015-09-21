@@ -107,19 +107,23 @@ function OnChatMessage(chat_message){
   // parse the response
   // emit the transformed chat message to replace the placeholder chat_message
 
-  Transform(
-    chat_message["transform_list"][0],
+  // Transform(
+  //   chat_message["transform_list"][0],
+  //   chat_message,
+  //   function(err, result){
+  //     console.log(result);
+  //     EmitAndStoreChatMessage(result);
+  //   }
+  // );
+
+  TransformChain(
+    chat_message["transform_list"],
     chat_message,
     function(err, result){
       console.log(result);
       EmitAndStoreChatMessage(result);
     }
   );
-
-  // TransformChain(null, chat_message, function(err, result){
-  //     console.log(result);
-  //     EmitAndStoreChatMessage(result);
-  //   })
 }
 
 var EmitChatMessage = function(chat_message){
@@ -524,10 +528,10 @@ var ChooseTransform = function(mode){
 var TransformChain = function(transform_list, chat_message, callback){
   async.waterfall([
     function(async_cb){
-      Transform("Scots", chat_message, async_cb);
+      Transform(transform_list[0], chat_message, async_cb);
     },
     function(cm, async_cb){
-      Transform("Speak", cm, async_cb);
+      Transform(transform_list[1], cm, async_cb);
     },
     function(cm, async_cb){
       callback(null, cm);
