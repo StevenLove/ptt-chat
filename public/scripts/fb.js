@@ -71,8 +71,8 @@
       // For now, control use of the dev version or public version
       // by commenting out one of the two lines below
       //*********************************************
-      // SetFacebookInitCallback();
-      SetFacebookInitCallbackDev();
+      SetFacebookInitCallback();
+      // SetFacebookInitCallbackDev();
       // *********************************************
     }
 
