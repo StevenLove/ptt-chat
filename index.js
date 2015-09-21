@@ -526,17 +526,25 @@ var ChooseTransform = function(mode){
 }
 
 var TransformChain = function(transform_list, chat_message, callback){
-  async.waterfall([
-    function(async_cb){
-      Transform(transform_list[0], chat_message, async_cb);
-    },
-    function(cm, async_cb){
-      Transform(transform_list[1], cm, async_cb);
-    },
-    function(cm, async_cb){
-      callback(null, cm);
-    }
-  ]);
+  if(transform_list.length == 1){
+    Transform(transform_list[0], chat_message, callback);
+  }
+  else if(transform_list.length == 2){
+    async.waterfall([
+      function(async_cb){
+        Transform(transform_list[0], chat_message, async_cb);
+      },
+      function(cm, async_cb){
+        Transform(transform_list[1], cm, async_cb);
+      },
+      function(cm, async_cb){
+        callback(null, cm);
+      }
+    ]);
+  }
+  else{
+    console.error("Only 2 transforms allowed for now");
+  }
 }
 
 var Transform = function(mode, chat_message, callback){

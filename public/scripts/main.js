@@ -70,50 +70,46 @@
     } 
 
 
+    window.num_transforms = 1;
+    window.num_transforms_max = 2;
 
+    var EnableAddTransformButton = function(){
+      $("#add_transform_button").click(function(){
+        console.log("CLICK!");
+        if(window.num_transforms < window.num_transforms_max){
+          window.num_transforms++;
+          var $dropdown = GetTransformDropdown(window.num_transforms-1);
+          $dropdown.show();
+        }
+      });
+    }
 
-
-
-
+    var GetTransformDropdown = function(index){
+      return $("#transform_dropdown_"+index);
+    }
 
     var PopulateTransformDropdown = function(){
       CreateTransformDropdowns();
-
-      // options.forEach(function(option){
-      //   $("#transform_dropdown").append("<option value = " + option +">" + option + "</option>");
-      // });
-
-
-      // $("#transform_dropdown").change(function(){
-      //   var selected = $("#transform_dropdown option:selected").val();
-      //   if(selected === "Add a Transform..."){
-
-      //   }
-      //   else{
-      //     document.transforms = [selected,"LocalSpeak"];
-      //   }
-      // });
     }
 
     var CreateTransformDropdowns = function(){
       var options = ["None", "Images", "Synonymize", "Antonymize", "SmartSynonymize" , "Paraphrase", "Spanish", "Scots", "German", "Speak", "PugImages", "LocalSpeak", "AutoSpeak"];
 
-      // options.push("Add a Transform...");
+      var $select0 = CreateTransformDropdown(0,options);
+      var $select1 = CreateTransformDropdown(1,options);
+      $select1.hide();
 
-      var $select1 = CreateTransformDropdown(0,options);
-      var $select2 = CreateTransformDropdown(1,options);
-
-      $("#transform_dropdown_0").replaceWith($select1);
-      $("#transform_dropdown_1").replaceWith($select2);
-
-
+      $("#transform_dropdown_0").replaceWith($select0);
+      $("#transform_dropdown_1").replaceWith($select1);
     }
 
     var CreateTransformDropdown = function(index, list){
       var $select = $("<select id ='transform_dropdown_"+index+"' class='form-control'></select>");
-      list.forEach(function(option){
-        $select.append("<option value = " + option +">" + option + "</option>");
-      });
+      list.forEach(
+        function(option){
+          $select.append("<option value='" + option +"'>"+option + "</option>");
+        }
+      );
       $select.change(function(){
         var selected = $("#transform_dropdown_"+index + " option:selected").val();
         document.transforms[index] = selected;
@@ -121,26 +117,9 @@
       return $select;
     }
 
-    // var CreateExtendableTransformDropdown = function(index,list){
-    //   var new_list = list.slice(0);
-    //   new_list.push("Add a Transform...");
-    //   var $select = CreateTransformDropdown(index,list);
-    //   $select.change(function(){
-    //     var selected = $("#transform_dropdown_"+index + " option:selected").val();
-    //     if(selected === "Add a Transform..."){
-    //       var $this_transform = CreateTransformDropdown(index,list);
-    //       var $new_transform = CreateTransformDropdown(index+1,list);
-    //       $("#transform_dropdown_"+index).replaceWith($new_transform);
-    //     }
-    //     else{
-    //       document.transforms[index] = selected;
-    //     }
-    //   })
-    // }
-
 
     var SetupTransforms = function(){
-      document.transforms = ["None", "None"];
+      document.transforms = ["None"];
       PopulateTransformDropdown();
     }
 
@@ -191,6 +170,7 @@
       EnableSendButton();
       SetupTransforms();
       EnableTooltips();
+      EnableAddTransformButton();
     });
 
     function EnableTooltips(){
@@ -209,6 +189,7 @@
       if(input && input.length > 0){
         ClearInput();
         console.log("sending " + input);
+        console.log(document.transforms);
         document.socket.emit('chat message', new ChatMessage(input));
       }
       return false;
