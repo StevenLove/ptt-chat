@@ -86,16 +86,9 @@
       });
     }
 
-    var EnableTransformButton = function(){
-      $("#transform_button").click(function(){
-        var transform = $("#transform_dropdown").val();
-        document.transforms = [transform];
-      });
-    }
 
     var SetupTransforms = function(){
-      document.transforms = [];
-      EnableTransformButton();
+      document.transforms = ["None"];
       PopulateTransformDropdown();
     }
 
@@ -127,13 +120,13 @@
     }
 
     function ParseChatbotMessage(chat_message){
-      var xml_string = chat_message.original_text;
+      var xml_string = chat_message.text;
       var xml_doc = $.parseXML(xml_string);
       $xml = $(xml_doc);
       $bot_response = $xml.find("that");
       var bot_response = $bot_response.text();
       console.log(bot_response);
-      chat_message.original_text = bot_response;
+      chat_message.text = bot_response;
       return chat_message;
     }
 
@@ -195,12 +188,9 @@
       this.author_name = GetMyName();
       this.timestamp = new Date().getTime();
       this.target = (directed_at_bot)? "Everyone" : "Humans";
-      this.original_text = message;
-      this.is_images = false;
-      //transformed_text
-      //image_url_lists
+      this.original_text = this.text = message;
+
       this.transform_list = document.transforms;
-      this.one_word_at_a_time = true;
     }
 
     

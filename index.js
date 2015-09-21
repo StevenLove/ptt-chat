@@ -97,7 +97,7 @@ var RegisterSpeechSynthesisAvailability = function(socket, bool){
 function OnChatMessage(chat_message){
   chat_message = JSON.parse(JSON.stringify(chat_message));
   if(IsDirectedAtBot(chat_message)){
-    EmitChatbotResponseToAll(chat_message.original_text);
+    EmitChatbotResponseToAll(chat_message.text);
   }
 
   // Receive chat_message
@@ -290,7 +290,7 @@ function RecapMessagesInBuffer(socket) {
 
 var CreateTranslated = function(chat_message, response){
   chat_message["type"] = "Text";
-  chat_message["transformed_text"] = response["text"];
+  chat_message["text"] = response["text"];
   return chat_message;
 }
 var CreateSpeak = function(chat_message, response){
@@ -305,14 +305,13 @@ var CreateImages = function(chat_message, response){
 
 var CreateText = function(chat_message, response){
   chat_message["type"] = "Text";
-  chat_message["transformed_text"] = chat_message["original_text"];
   return chat_message;
 }
 
 var CreatePugImages = function(chat_message, response){
   chat_message["type"] = "LocalGoogleImages";
-  chat_message["original_text"] = 
-    chat_message["original_text"]
+  chat_message["text"] = 
+    chat_message["text"]
     .split(" ")
     .map(
       function(word){
@@ -327,7 +326,7 @@ var CreateSynonymize = function(chat_message, response){
   response["words"].forEach(function(word){
     console.log(JSON.stringify(word).slice(0,77) + "...");
   });
-  chat_message["transformed_text"] = response["words"].map(
+  chat_message["text"] = response["words"].map(
     function(word){
       word["list"].push(word["original"]);
       return word["list"][0];
@@ -343,7 +342,7 @@ var CreateSynonymize = function(chat_message, response){
 var SpanishTransform = function(chat_message){
   var result = {
     "options":{
-      "text" : chat_message["original_text"],
+      "text" : chat_message["text"],
       "from" : "en",
       "to" : "es"
     },
@@ -370,7 +369,7 @@ var ImagesTransform = function(chat_message){
 
 var SpeakTransform = function(chat_message){
  var result = {
-    "options": chat_message["original_text"], 
+    "options": chat_message["text"], 
     "function": transformer.AutoSpeak,
     "creator": CreateSpeak
   };
@@ -384,7 +383,7 @@ var SpeakTransform = function(chat_message){
 var SynonymizeTransform = function(chat_message){
   var result = {
     "options": {
-      "text": chat_message["original_text"]
+      "text": chat_message["text"]
     },
     "function": transformer.Synonymize,
     "creator": CreateSynonymize
@@ -401,7 +400,7 @@ var AntonymizeTransform = function(chat_message){
 var SmartSynonymizeTransform = function(chat_message){
   var result = {
     "options": {
-      "text": chat_message["original_text"]
+      "text": chat_message["text"]
     },
     "function": transformer.SmartSynonymize,
     "creator": CreateSynonymize
@@ -412,7 +411,7 @@ var SmartSynonymizeTransform = function(chat_message){
 var ParaphraseTransform = function(chat_message){
   var result = {
     "options": {
-      "text": chat_message["original_text"]
+      "text": chat_message["text"]
     },
     "function": transformer.Paraphrase,
     "creator": CreateTranslated
@@ -423,7 +422,7 @@ var ParaphraseTransform = function(chat_message){
 var ScotsTransform = function(chat_message){
   var result = {
     "options": {
-      "text": chat_message["original_text"]
+      "text": chat_message["text"]
     },
     "function": transformer.Scotranslate,
     "creator": CreateTranslated
@@ -443,7 +442,7 @@ var PugImagesTransform = function(chat_message){
 var DoNothingTransform = function(chat_message){
   var result = {
     "options": {
-      "text": chat_message["original_text"]
+      "text": chat_message["text"]
     },
     "function": transformer.DoNothing,
     "creator": CreateText
@@ -455,7 +454,7 @@ var LocalSpeakTransform = function(chat_message){
   var result = DoNothingTransform(chat_message);
   result["creator"] = function(chat_message, response){
     chat_message["type"] = "LocalSpeak";
-    chat_message["transformed_text"] = chat_message["original_text"];
+    chat_message["text"] = chat_message["text"];
     return chat_message;
   };
   return result;
@@ -528,10 +527,6 @@ var TransformChain = function(transform_list, chat_message, callback){
       Transform("Scots", chat_message, async_cb);
     },
     function(cm, async_cb){
-      cm["original_text"] = cm["transformed_text"];
-      async_cb(null, cm);
-    },
-    function(cm, async_cb){
       Transform("Speak", cm, async_cb);
     },
     function(cm, async_cb){
@@ -554,7 +549,7 @@ var Transform = function(mode, chat_message, callback){
 
   var transformation = ChooseTransform(mode);
   console.log("\n");
-  console.log(mode +" Transform on \"" + chat_message["original_text"] + "\"");
+  console.log(mode +" Transform on \"" + chat_message["text"] + "\"");
   var transform = transformation(chat_message);
   var func = transform["function"];
   var create = transform["creator"];
@@ -670,14 +665,13 @@ function EmitChatbotResponseToAll(message){
       }
 
       var chatbot_chat_message = {
-        msg: bot_text,
-        timestamp: new Date().getTime(),
-        author_name: "Chatbot Lauren",
-        author_id: BOTID,
-        transform_list: ["AutoSpeak"],
-        taget: "Humans",
-        original_text: bot_text,
-        is_images: true,
+        "timestamp": new Date().getTime(),
+        "author_name": "Chatbot Lauren",
+        "author_id": BOTID,
+        "transform_list": ["AutoSpeak"],
+        "taget": "Humans",
+        "original_text": bot_text,
+        "text": bot_text
       }
 
       setTimeout(function(){

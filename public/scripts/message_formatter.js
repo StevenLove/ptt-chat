@@ -127,11 +127,6 @@ define([
 
 
 
-
-
-
-
-
       /* Message Creation */
 
       var LocalSpeakMessage = function(chat_message){
@@ -159,7 +154,7 @@ define([
 
       var TextMsg = function(chat_message){
         var msg = GenerateMsgHTML();
-        msg.text(chat_message.transformed_text);
+        msg.text(chat_message.text);
         return msg;
       }
 
@@ -231,14 +226,7 @@ define([
         div.scrollTop(height);
       }
 
-
-      // this.GenerateMsgHTML = GenerateMsgHTML;
-      // this.GenerateNewMessageLine = GenerateNewMessageLine;
-      // this.TextMsg = TextMsg;
       this.ChatMessageContainer = ChatMessageContainer;
-
-      // this.Label = Label;
-
 
     };
     return message_formatter;
