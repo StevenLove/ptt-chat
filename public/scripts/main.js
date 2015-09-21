@@ -1,8 +1,10 @@
  console.log("")
 
- requirejs(['scripts/facebook.js', 'scripts/synthesis.js'],function(fb_ref, synthesis_ref){
+ requirejs(['scripts/facebook.js', 'scripts/synthesis.js', 'scripts/google.js'],function(fb_ref, synthesis_ref, google_ref){
 
    var synthesis = new synthesis_ref();
+   var googler = new google_ref();
+   console.log(googler);
 
 
    function SetupFacebook(){
@@ -427,7 +429,7 @@
       return TextMsg(chat_message);
     }
     if(IsLocalImageMessage(chat_message)){
-      return LocalImageMsg(chat_message);
+      return googler.LocalImageMsg(chat_message);
     }
     if(IsServerImageMessage(chat_message)){
       return ServerImageMsg(chat_message);
@@ -466,43 +468,14 @@
     var msg = GenerateMsgHTML();
     chat_message["image_url_lists"].forEach(
       function(url_list){
-        var cycling_images = CombineImages(url_list);
+        var cycling_images = googler.CombineImages(url_list);
         msg.append(cycling_images);
       }
     );
     return msg;
   }
 
-  var LocalImageMsg = function(chat_message){
-    var msg = GenerateMsgHTML();
-    var img_containers = [];
-
-    if(chat_message.transform_list.indexOf("PugImages")>-1){
-      chat_message.transformed_text = PuggifySentence(chat_message.original_text);
-    }
-    else{
-      chat_message.transformed_text = chat_message.original_text;
-    }
-
-    var words = chat_message.transformed_text.split(" ");
-    words.forEach(function(word,index){
-      img_containers[index] = $("<div>");
-      img_containers[index].css('display','inline-block');
-
-      GoogleSearch(
-        word,
-        function(err,google_results){
-          var url_list = [];
-          google_results.forEach(function(result){
-            url_list.push(result.tbUrl);
-          });
-          img_containers[index].append(CombineImages(url_list));
-        }
-      );
-      msg.append(img_containers[index]);
-    });
-    return msg;
-  }
+  
 
   var PuggifySentence = function(text){
     var words = text.split(" ");
@@ -512,90 +485,6 @@
     return result;
   }
 
-  /* Displaying Images */
-
-  var CombineImages = function(url_list){
-    var container = $("<div>");
-    url_list.forEach(
-      function(url){
-        var img = ResultImage(url);
-        container.append(img);
-        container.css('display','inline-block');
-      }
-    );
-    CycleThroughImages(container);
-    return container;
-  }
-
-  function ResultImage(url){
-    var img = $("<img>");
-    img.on("load", function(){
-      ScrollDown();
-      img.parent().show();
-    });
-    
-    // img.css('display','inline-block');
-    // img.hide();
-    img.css('width',150);
-    img.css('height',150);
-    img.attr('src', url);
-    
-    return img;
-  }
-
-  function CycleThroughImages(container){
-    ShowNextImage(container,0);
-  }
-      
-  function ShowNextImage(container,index){
-    index = parseInt(index);
-    var max = container.children().length;
-    // console.log("max: " + max);
-    index = (index >= max)? 0 : index;
-    ShowOneImage(container,index);
-    setTimeout(function(){
-      ShowNextImage(container,index+1);
-    },3000);
-  }
-  function ShowOneImage(container,index){
-    container.children().hide();
-    var index_from_1 = parseInt(index) + 1;
-    container.children('img:nth-child('+index_from_1+')').show();
-  }
-  function ShowAllImages(container){
-    container.children().show();
-  }
-
-  /* Local Google Images */
-
-  function SetupGoogleSearch(){
-    google.load('search', '1', {
-      callback: function(){
-        console.log(google.search.Search);
-        google.setOnLoadCallback(function(){
-          google.search.Search.getBranding('branding');
-        });
-      }
-    });
-  }
-  SetupGoogleSearch();
-  // No clue why, but if I try to call this in $(document).ready the whole page is blank.
-  // SetupGoogleSearch();
-  // So leave it here for now!
-
-  var GoogleSearch = function(string, callback){
-     // Create an Image Search instance.
-    var my_search = new google.search.ImageSearch();
-    // Set searchComplete as the callback function when a search is 
-    // complete.  The imageSearch object will have results in it.
-    my_search.setSearchCompleteCallback(
-      this, 
-      function(){
-        callback(null,my_search.results);
-      }
-    );
-    my_search.setResultSetSize(8);
-    my_search.execute(string);
-  }
+ 
 
 });

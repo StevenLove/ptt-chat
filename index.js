@@ -240,12 +240,24 @@ var NumUsers = function(){
 }
 
 var EveryoneCanSynthesizeSpeech = function(){
-  return Object.keys(active_users).reduce(function(prev, current){
-    var this_user_can = active_users[current] && active_users[current]["speech_synthesis_available"];
-    return prev && this_user_can;
-  });
+  // true && "abcd" = "abcd"
+  // false && "abcd" = false
+  // "abcd" && false = false
+  // "abcd" && true = true
+  var results = Object.keys(active_users).reduce(
+    function(prev, current){
+      var this_user_can = CanSynthesizeSpeech(active_users[current]);
+      var prev_user_could = CanSynthesizeSpeech(active_users[prev]);
+      var res = prev_user_could && this_user_can;
+      return res;
+    }
+  );
+  return results;
 }
 
+var CanSynthesizeSpeech = function(user){
+  return (user != undefined) && (user["speech_synthesis_available"] === true);
+}
 
   /* Stored Messages */
 
