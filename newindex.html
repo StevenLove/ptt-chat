@@ -127,11 +127,10 @@
                    </div>
                 </li>
                 <li>
-                    <fb:login-button scope="public_profile,email" size="large" onlogin="checkLoginState();" data-auto-logout-link="true">
-                    </fb:login-button>
+                    <div id ="facebook_button"></div>
                 </li>
                 <li>
-                    <div id="status"></div>
+                    <div id="facebook_status"></div>
                 </li>
                 <li>
                   <div>
@@ -179,7 +178,7 @@
     <!-- /#wrapper -->
 
 
-    
+
 
     <!-- jQuery -->
     <script src="scripts/jquery.js"></script>
@@ -195,11 +194,14 @@
       });
     </script>
 
+
+
     <script src="https://www.google.com/jsapi" type="text/javascript"></script>
     <script src ="https://cdn.socket.io/socket.io-1.2.0.js"></script>
     <script src = "/socket.io/socket.io.js"></script>
     
     <script data-main="scripts/main" src="scripts/require.js"></script>
+
 
     <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
 

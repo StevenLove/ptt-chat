@@ -1,49 +1,26 @@
  console.log("")
 
- requirejs(['scripts/facebook.js', 'scripts/synthesis.js', 'scripts/google.js'],function(fb_ref, synthesis_ref, google_ref){
+ // require.config({
+ //   shim: {
+ //     'facebook' : {
+ //       exports: 'FB'
+ //     }
+ //   },
+ //   paths: {
+ //     'facebook': '//connect.facebook.net/en_US/sdk'
+ //   }
+ // })
+ // require(['fb']);
+
+
+ requirejs(['scripts/fb.js', 'scripts/synthesis.js', 'scripts/image_formatter.js'],function(fb_ref, synthesis_ref, image_formatter_ref){
 
    var synthesis = new synthesis_ref();
-   var googler = new google_ref();
-   console.log(googler);
+   var image_formatter = new image_formatter_ref();
+   var facebook = new fb_ref();
 
+   window.checkLoginState = facebook.checkLoginState;
 
-   function SetupFacebook(){
-    LoadFacebookSDK();
-    // For now, control use of the dev version or public version
-    // by commenting out one of the two lines below
-    //*********************************************
-    SetFacebookInitCallback();
-    // SetFacebookInitCallbackDev();
-    // *********************************************
-  }
-
-  // Here we run a very simple test of the Graph API after login is
-  // successful.  See statusChangeCallback() for when this call is made.
-  function FacebookLoggedInCallback() {
-    FB.api('/me', function(response) {
-      // document.getElementById('status').innerHTML =
-        // 'Thanks for logging in, ' + response.name + '!';
-      document.facebook.response = response;
-      document.facebook.name = response.name;
-      document.facebook.id = response.id;
-      document.facebook.logged_in = true;
-      document.socket.emit("facebook login", response);
-    });
-  }
-
-  var FacebookLoggedOutCallback = function(){
-    document.facebook.logged_in = false;
-    document.facebook.name = "";
-    document.socket.emit("facebook logout", facebook.id);
-    document.facebook.id = "";
-  }
-
-  $(document).ready(function(){
-    SetupFacebook();
-  })
-
-// });
- // requirejs(['scripts/synthesis.js'],function(synthesis){
 
    console.log(synthesis);
 
@@ -209,7 +186,7 @@
         var directed_at_bot = $("#user_dropdown").val() == EVERYONE_AND_LAUREN_ID;
 
         this.author_id = GetMyID();
-        this.author_facebook_id = GetFacebookID();
+        this.author_facebook_id = facebook.GetFacebookID();
         this.author_name = GetMyName();
         this.timestamp = new Date().getTime();
         this.target = (directed_at_bot)? "Everyone" : "Humans";
@@ -236,25 +213,18 @@
       }
 
       function GetMyName(){
-        if(document.facebook.logged_in){
-          return document.facebook.name;
+        if(facebook.logged_in){
+          return facebook.name;
         }
         else{
           return "Anonymous " + document.random_name;
         }
       }
 
-      function GetFacebookID(){
-        if(document.facebook.logged_in){
-          return document.facebook.id;
-        }
-        else{
-          return undefined;
-        }
-      }
+
       function GetMyID(){
-       if(document.facebook.logged_in){
-          return document.facebook.id;
+       if(facebook.logged_in){
+          return facebook.id;
         }
         else{
           return document.ip_address;
@@ -369,20 +339,10 @@
   /* Labels */
 
   function Label(chat_message){
-    // var label = $("<a href='#' data-toggle='tooltip' title='Hooray!'>");
-    // var label_text = LabelText(chat_message);
     var label_pic = LabelPicture(chat_message);
-    // label.append(label_pic);
-    // var label = GenerateLabelHTML();
-    // var text = $("<p>").text(label_text);
-    // var time = $("<p>").text(new Date(chat_message.timestamp).toLocaleString());
-    // label.append(label_pic);
-
-    // label.append(text);
-    // label.append(time);
-    // return label;
     return label_pic;
   }
+
   function LabelText(chat_message){
     var time = "(" + new Date(chat_message.timestamp).toLocaleTimeString() + ")";
     var author = chat_message.author_name;
@@ -392,7 +352,7 @@
   function LabelPicture(chat_message){
     var url;
     if(chat_message.author_facebook_id){
-      url = FacebookProfilePicture(chat_message.author_facebook_id);
+      url = facebook.FacebookProfilePicture(chat_message.author_facebook_id);
     }
     else{
       url = RobohashURL(chat_message.author_id);
@@ -402,15 +362,7 @@
   }
 
   var RobohashURL = function(ip){
-    // console.log("robohash ip: " + ip);
     var base = "https://robohash.org/"
-    // var last_digit = parseInt(ip.slice(-1));
-    // var next_to_last_digit = parseInt(ip.slice(-2,-1));
-    // var set = (last_digit < 4)? 1 : 
-    //           (last_digit < 8)? 2 : 
-    //           3;
-    // var bgset = (next_to_last_digit < 5)? 1 : 2;
-    // return base + ip +"?set=set"+set+"&bgset=bg"+bgset;
     return base+ip+"?set=any&bgset=any";
   }
 
@@ -429,10 +381,10 @@
       return TextMsg(chat_message);
     }
     if(IsLocalImageMessage(chat_message)){
-      return googler.LocalImageMsg(chat_message);
+      return image_formatter.LocalImageMsg(chat_message);
     }
     if(IsServerImageMessage(chat_message)){
-      return ServerImageMsg(chat_message);
+      return image_formatter.ServerImageMsg(chat_message);
     }
   }
   // var IsPugImageMessage = function(chat_message){
@@ -464,16 +416,7 @@
     return msg;
   }
 
-  var ServerImageMsg = function(chat_message){
-    var msg = GenerateMsgHTML();
-    chat_message["image_url_lists"].forEach(
-      function(url_list){
-        var cycling_images = googler.CombineImages(url_list);
-        msg.append(cycling_images);
-      }
-    );
-    return msg;
-  }
+ 
 
   
 
