@@ -5,7 +5,7 @@ define(['scripts/google.js'], function(google_ref){
     var googler = new google_ref();
 
     var LocalImageMsg = function(chat_message){
-      var msg = GenerateMsgHTML();
+      var $div = $("<div></div>");
       var img_containers = [];
 
       if(chat_message.transform_list.indexOf("PugImages")>-1){
@@ -30,9 +30,9 @@ define(['scripts/google.js'], function(google_ref){
             img_containers[index].append(CombineImages(url_list));
           }
         );
-        msg.append(img_containers[index]);
+        $div.append(img_containers[index]);
       });
-      return msg;
+      return $div;
     }
 
      /* Displaying Images */
@@ -88,28 +88,33 @@ define(['scripts/google.js'], function(google_ref){
     var ShowAllImages = function(container){
       container.children().show();
     }
-    
+
     var ServerImageMsg = function(chat_message){
-      var msg = GenerateMsgHTML();
+      var $div = $("<div></div>");
       chat_message["image_url_lists"].forEach(
         function(url_list){
           var cycling_images = CombineImages(url_list);
-          msg.append(cycling_images);
+          $div.append(cycling_images);
         }
       );
-      return msg;
+      return $div;
     }
 
     // DOESNT BELONG HERE
-    var GenerateMsgHTML = function(){
-      var msg = $("<div name='msg'></div>");
-      return msg;
-    }
     function ScrollDown(){
       var div = $("#messages");
       var height = div.prop("scrollHeight");
       div.scrollTop(height);
     }
+
+    var PuggifySentence = function(text){
+      var words = text.split(" ");
+      var result = words.map(function(word){
+        return "pug."+word;
+      }).join(" ");
+      return result;
+    }
+
     
 
     this.CombineImages = CombineImages;

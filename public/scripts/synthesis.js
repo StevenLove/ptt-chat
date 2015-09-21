@@ -109,28 +109,28 @@ define([], function(){
       return $audio;
     }
 
-    this.LocalSpeakMessage = function(chat_message){
-      if(!IsRecap(chat_message)){
-        if(CanSpeakLocal()){
-          SpeakLocal(chat_message);
-        }
-      }
-      var $msg = GenerateMsgHTML();
-      $msg.append(GenerateLocalAudioPlayer(chat_message));
-      return $msg;
-    }
+    // this.LocalSpeakMessage = function(chat_message){
+    //   if(!IsRecap(chat_message)){
+    //     if(CanSpeakLocal()){
+    //       SpeakLocal(chat_message);
+    //     }
+    //   }
+    //   var $msg = GenerateMsgHTML();
+    //   $msg.append(GenerateLocalAudioPlayer(chat_message));
+    //   return $msg;
+    // }
 
-    this.SpeakMessage = function(chat_message){
-      var $msg = GenerateMsgHTML();
-      var url = chat_message["url"];
-      if(IsRecap(chat_message)){
-        $msg.append(GenerateAudioPlayer(url));
-      }
-      else{
-        $msg.append(GenerateAutoplayAudioPlayer(url));
-      }
-      return $msg;
-    }
+    // this.SpeakMessage = function(chat_message){
+    //   var $msg = GenerateMsgHTML();
+    //   var url = chat_message["url"];
+    //   if(IsRecap(chat_message)){
+    //     $msg.append(GenerateAudioPlayer(url));
+    //   }
+    //   else{
+    //     $msg.append(GenerateAutoplayAudioPlayer(url));
+    //   }
+    //   return $msg;
+    // }
 
 /* DONT BELONG HERE */
     var IsRecap = function(chat_message){
@@ -147,8 +147,13 @@ define([], function(){
       SetupSpeechSynthesis();
     });
     // this.LocalSpeakMessage = LocalSpeakMessage;
-    // this.SpeakMessage = SpeakMessage;
+    this.SpeakLocal = SpeakLocal;
+    this.GenerateLocalAudioPlayer = GenerateLocalAudioPlayer;
+    this.CanSpeakLocal = CanSpeakLocal;
+    this.GenerateAudioPlayer = GenerateAudioPlayer;
+    this.GenerateAutoplayAudioPlayer = GenerateAutoplayAudioPlayer;
   }
+
 
   return synthesis;
 
