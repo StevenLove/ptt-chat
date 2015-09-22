@@ -80,6 +80,12 @@
         }
       });
     }
+    var EnableToggleCreditsButton = function(){
+      $("#toggle_credits_button").click(function(){
+        console.log("CLICK!");
+        $("#credits_list").toggle();
+      });
+    }
 
     var GetTransformDropdown = function(index){
       return $("#transform_dropdown_"+index);
@@ -168,6 +174,7 @@
       SetupTransforms();
       EnableTooltips();
       EnableAddTransformButton();
+      EnableToggleCreditsButton();
     });
 
     function EnableTooltips(){

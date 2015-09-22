@@ -74,7 +74,7 @@
         /*background-color: BurlyWood;*/
         width:50px;
       }
-      #branding{
+      #google_branding{
         float:left;
       }
       #sidebar-wrapper{
@@ -101,8 +101,24 @@
       audio{
         width:250px;
       }
+      #credits_list{
+        display:none;
+        font-size:80%;
+        /*position:absolute;*/
+        /*width:400px;*/
+        /*height:400px;*/
+        /*z-index:20;*/
+        /*background-color:red;*/
+      }
 
-      
+      .noselect {
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -khtml-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+      }
 
     </style>
 
@@ -113,7 +129,7 @@
     <div id="wrapper">
 
         <!-- Sidebar -->
-        <div id="sidebar-wrapper">
+        <div id="sidebar-wrapper" class="noselect">
             <ul class="sidebar-nav">
                 <li class="sidebar-brand">
                     <a href="#">
@@ -124,9 +140,7 @@
                    <div class="input-group">
                       <div>
                         <label for="transform_dropdown_0">Choose a Transform</label>
-                         <!-- <button href="#" id="add_transform_button" class="btn btn-default"> -->
                            <span class="glyphicon glyphicon-plus" id="add_transform_button" aria-hidden="true"></span>
-                         <!-- </button> -->
                       </div>
                       <select class="form-control" id="transform_dropdown_0"></select>
                    </div>
@@ -149,24 +163,50 @@
                     <div id="facebook_status"></div>
                 </li>
                 <li>
-                  <div>
-                    <a href="https://robohash.org/">Robots from Robohash.org</a>
-                  </div>
-                </li>
-                <li>
                     <div id="branding" ></div>
                 </li>
                 <li>
                   <select id="voicelist"></select>
+                </li>
+                <li>
+                  Credits
+                  <span class="glyphicon glyphicon-plus" id="toggle_credits_button" aria-hidden="true"></span>
+                </li>
+                <li>
+                  <div class="list-group" id="credits_list">
+                    <a href="https://robohash.org/">Robots: Robohash.org</a>
+                    <a href="https://words.bighugelabs.com/">Thesaurus: words.bighugelabs.com</a>
+                    <a href="http://www.idilia.com/">Paraphrasing: idilia.com</a>
+                    <a href="https://datamarket.azure.com/">Translation, TTS: Microsoft Azure</a>
+                    <a href="http://text-processing.com/docs/tag.html">POS-tagging: text-processing.com</a>
+                    <a href="http://www.scotranslate.com/">Scots: scotranslate.com</a>
+                    <div id="google_branding"></div><br>
+                  </div>
                 </li>
             </ul>
         </div>
         <!-- /#sidebar-wrapper -->
 
         <!-- Page Content -->
+
         <div id="page-content-wrapper">
           <div id ="wrapper2" class="container-fluid">
-            <!-- <div id = "messages_div"> -->
+             
+
+
+
+<!--             <div class="panel panel-default">
+              <div class="panel-heading">Panel heading</div>
+              <div class="panel-body">
+                <p>...</p>
+              </div>
+
+              </div>
+ -->
+
+
+
+
               <ul id = "messages">
               </ul>
             <!-- </div> -->

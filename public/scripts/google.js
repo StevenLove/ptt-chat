@@ -6,9 +6,9 @@ define([], function(){
       google.load('search', '1', {
         callback: function(){
           console.log(google.search.Search);
-          google.setOnLoadCallback(function(){
-            google.search.Search.getBranding('branding');
-          });
+          // google.setOnLoadCallback(function(){
+          google.search.Search.getBranding('google_branding');
+          // });
           PerformSearchesInQueue();
         }
       });
