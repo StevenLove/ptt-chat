@@ -5,10 +5,12 @@
 // so I don't have to pass it up and down everything.
 // otherwise I probably want to combine text into options
 
-var Synonymizer = function(){
+var Synonymizer = function(api_key){
   var self = this;
+  self.api_key = api_key;
   var async = require('async');
   var request = require('request');
+  
   var PartOfSpeecher = require('./PartOfSpeecher.js');
   var part_of_speecher = new PartOfSpeecher();
 
@@ -201,9 +203,8 @@ var Synonymizer = function(){
 
   var ConsumeBigHugeSynonymAPI = function(word, callback){
     const api_url_base ="http://words.bighugelabs.com/api/2/";
-    const api_key = ***REMOVED***;
     const format = "json";
-    var api_url = api_url_base+api_key+"/"+word+"/"+format;
+    var api_url = api_url_base+self.api_key+"/"+word+"/"+format;
     request(
       {"url": api_url},
       callback

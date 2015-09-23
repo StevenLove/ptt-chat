@@ -8,6 +8,7 @@ var Transformer = function(){
   var ms_translation_secret = secrets.ms_translation_secret;
   var bing_image_key = secrets.bing_image_key;
   var idilia_secret = secrets.idilia_secret;
+  var bighuge_api_key = secrets.bighuge_api_key;
 
 
   var ImageSearch = require('./ImageSearch.js');
@@ -20,7 +21,7 @@ var Transformer = function(){
   var idilia_paraphrase_instance = new idilia_paraphrase(idilia_secret);
 
   var Synonymizer = require('./Synonymizer.js');
-  var synonymizer = new Synonymizer();
+  var synonymizer = new Synonymizer(bighuge_api_key);
 
   var PartOfSpeecher = require('./PartOfSpeecher.js');
   var part_of_speecher = new PartOfSpeecher();
@@ -62,7 +63,7 @@ var Transformer = function(){
 
 
 
-  self.Transform = function(text, options, callback){
+  var Transform = function(text, options, callback){
     var f;
     switch(options.mode){
       case "Translate":
@@ -92,6 +93,9 @@ var Transformer = function(){
       case "Scots": 
         f = self.Scots;
         break;
+      // case "Rhyme":
+      //   f = self.Rhyme;
+      //   break;
       default :
         console.log("DOING NOTHING");
         f = DoNothing;
@@ -101,7 +105,7 @@ var Transformer = function(){
   }
 
   self.Transform = async.memoize(
-    self.Transform,
+    Transform,
     function(text,options){
       var str = options.mode+":"+text;
       var hash = str.hashCode();
@@ -123,33 +127,9 @@ var Transformer = function(){
     );
   }
 
-  var Paraphrase = idilia_paraphrase_instance.Paraphrase;
-
-  var LogAndPassCallback = function(callback){
-    return function(err, succ){
-      console.log("ERRORS: " + JSON.stringify(err));
-      console.log("RESULT: " + JSON.stringify(succ));
-      callback(err,succ);
-    }
-  }
-
-  self.BingImages = function(text, options, callback){
-    image_search.BingImages(
-      text,
-      options,
-      LogAndPassCallback(callback)
-    );
-  }
-
-  self.GoogleImages = function(text, options, callback){
-    console.log("GoogleImages called in Transformer.js");
-    image_search.GoogleImages(
-      text,
-      options,
-      LogAndPassCallback(callback)
-    );
-  }
-
+  self.Paraphrase = idilia_paraphrase_instance.Paraphrase;
+  self.BingImages = image_search.BingImages;
+  self.GoogleImages = image_search.GoogleImages;
   self.Synonymize = synonymizer.Synonymize;
 
   self.Antonymize = function(text, options, callback){
@@ -158,21 +138,43 @@ var Transformer = function(){
   }
 
   self.SmartSynonymize = synonymizer.SmartSynonymize;
-      
-
-  self.PartOfSpeechify = function(text, options, callback){
-    part_of_speecher.PartOfSpeechify(
-      text,
-      options,
-      LogAndPassCallback(callback)
-    );
-  }
-
+  self.PartOfSpeechify = part_of_speecher.PartOfSpeechify;
   self.Speak = ms_translate_instance.Speak;
   self.AutoSpeak = ms_translate_instance.AutoSpeak;
   self.Scotranslate = scots_translator.Translate;
-
   self.DetectLanguage = ms_translate_instance.DetectLanguage;
+
+  // self.RhymeOnce = function(text, callback){
+  //   var api_key = secrets["wordnik_api_key"];
+  //   var word = text;
+  //   var url = 'http://api.wordnik.com:80/v4/word.json/'+word+'/relatedWords?useCanonical=true&relationshipTypes=rhyme&limitPerRelationshipType=10&api_key=' + api_key;
+  //   var request = require('request');
+  //   request(
+  //     url,
+  //     function(err,response,body){
+  //       var body_obj = JSON.parse(body);
+  //       body_obj["original"] = text;
+  //       callback(err, body_obj);
+  //     }
+  //   );
+  // }
+
+  // self.Rhyme = function(word_items, callback){
+  //   var words = text.split(" ");
+  //   var results = [];
+  //   async.forEachOf(
+  //     words,
+  //     function(word, index, async_cb){
+  //       RhymeOnce(word,options,)
+
+  //       async_cb();
+  //     },
+  //     function(err){
+  //       if(err) console.error(err);
+  //       callback(err,)
+  //     }
+  //   )
+  // }
 
   /* Helpers */
 
@@ -204,7 +206,6 @@ var Transformer = function(){
   }
   self.Translate = Translate;
   self.DoNothing = DoNothing;
-  self.Paraphrase = Paraphrase;
 }
 module.exports = Transformer;
 
