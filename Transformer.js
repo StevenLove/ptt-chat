@@ -11,6 +11,7 @@ var Transformer = function(){
   var bighuge_api_key = secrets.bighuge_api_key;
 
 
+
   var ImageSearch = require('./ImageSearch.js');
   var image_search = new ImageSearch(bing_image_key);
 
@@ -130,6 +131,7 @@ var Transformer = function(){
   self.Paraphrase = idilia_paraphrase_instance.Paraphrase;
   self.BingImages = image_search.BingImages;
   self.GoogleImages = image_search.GoogleImages;
+
   self.Synonymize = synonymizer.Synonymize;
 
   self.Antonymize = function(text, options, callback){
@@ -138,6 +140,7 @@ var Transformer = function(){
   }
 
   self.SmartSynonymize = synonymizer.SmartSynonymize;
+
   self.PartOfSpeechify = part_of_speecher.PartOfSpeechify;
   self.Speak = ms_translate_instance.Speak;
   self.AutoSpeak = ms_translate_instance.AutoSpeak;

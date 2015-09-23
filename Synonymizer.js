@@ -5,12 +5,19 @@
 // so I don't have to pass it up and down everything.
 // otherwise I probably want to combine text into options
 
+<<<<<<< HEAD
 var Synonymizer = function(api_key){
   var self = this;
   self.api_key = api_key;
   var async = require('async');
   var request = require('request');
   
+=======
+var Synonymizer = function(){
+  var self = this;
+  var async = require('async');
+  var request = require('request');
+>>>>>>> a5930f38369a965abc864af86726407ab998ea21
   var PartOfSpeecher = require('./PartOfSpeecher.js');
   var part_of_speecher = new PartOfSpeecher();
 
