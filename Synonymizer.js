@@ -80,6 +80,8 @@ var Synonymizer = function(){
     );
   }
 
+  
+
   var SynonymizeWordItemMemoized = async.memoize(
     SynonymizeWordItem,
     function(word_item){
@@ -252,7 +254,7 @@ var Synonymizer = function(){
     return Object.keys(dict);
   }
 
-    self.Synonymize = Synonymize;
+  self.Synonymize = Synonymize;
   self.SmartSynonymize = SmartSynonymize;
 
 }
